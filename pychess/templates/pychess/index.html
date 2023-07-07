@@ -1,0 +1,49 @@
+{% extends 'pychess\layout.html' %}
+
+{% block title %}
+Play Chess!
+{% endblock %}
+
+
+{% block body %}
+
+    <div style="background-color:rgb(90, 90, 90); height:50vh; width:25vw;">
+        {% if not user.is_authenticated %}
+            <div id="login" style="border:solid; width:100%; height:33%; font-size:72px; text-align: center;">Login</div>
+            <div id="register" style="border:solid; width:100%; height:32%; font-size:72px; text-align: center;">Register</div>
+            <div id="spectate" style="border:solid; width:100%; height:33%; font-size:72px; text-align: center;">Spectate</div>
+        {% else %}
+            <div id="play" style="border:solid; width:100%; height:33%; font-size:72px; text-align: center;">Play</div>
+            <div id="review" style="border:solid; width:100%; height:33%; font-size:72px; text-align: center;">Review</div>
+            <div id="spectate" style="border:solid; width:100%; height:32%; font-size:72px; text-align: center;">Spectate</div>
+        {%endif%}
+    </div>
+
+
+    <script>
+        if(document.querySelector("#login"))
+        {
+            document.querySelector("#login").addEventListener("click", () => {
+                window.location.href = "{% url 'login' %}"
+            })
+        }
+
+        if(document.querySelector("#register"))
+        {
+            document.querySelector("#register").addEventListener("click", () => {
+                window.location.href = "{% url 'register' %}"
+            })
+        }
+
+        if(document.querySelector("#play"))
+        {
+            document.querySelector("#play").addEventListener("click", () => {
+                window.location.href = "{% url 'newGame' %}"
+            })
+        }
+
+
+
+    </script>
+
+{% endblock %}

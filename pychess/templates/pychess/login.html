@@ -1,0 +1,29 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Pychess Login</title>
+    <link rel="stylesheet" href="{% static 'pychess/styles.css' %}">
+</head>
+<body>
+    {% if message %}
+    <div style="color:white; background-color: red;">
+        {{ message }}
+    </div>
+    {% endif %}
+
+    <div class="loginForm">
+        <form action="{% url 'login' %}" method="POST">
+            <div style="color:white">Username:</div>
+            <input class="loginInput" type="text" name="username"><br>
+            <div style="color:white">Password:</div>
+            <input class="loginInput" type="password" name="password"><br>
+            <input class="loginInput" type="submit" value="Login">
+            {% csrf_token %}
+        </form>
+        <a href="{% url 'index' %}">Return Home</a>
+    </div>
+</body>
+</html>

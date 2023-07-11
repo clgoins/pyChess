@@ -2,96 +2,31 @@ body {
     background-color: rgb(31, 27, 82);
 }
 
-/*content that overlays the main board window, such as the login or start game prompts*/
-#overlayContent {
-    position: absolute;
-    z-index: 1;
+.header {
+    position:relative;
+    min-height:15vh;
+    color:white;
 
-    margin: 0;
-    top:50%;
-    left:50%;
-    -ms-transform: translate(-50%, -50%);
-    transform: translate(-50%, -50%);
-
-    background-color: white;
 }
 
-/*main window, contains the board and info sidebar*/
-#mainContent {
-    margin: 0;
-    position: absolute;
-    
-    top:50%;
-    left:50%;
-    -ms-transform: translate(-50%, -50%);
-    transform: translate(-50%, -50%);
+.navbar {
+    position:absolute;
+    bottom:0;
+}
 
-    aspect-ratio: 4/3;
-    height: 75%;
-
+.navlink {
+    margin-left: 10px;
+    margin-right: 10px;
     border:solid;
-    border-color:white;
-    border-width: 3px;
-    border-radius:15px;
 }
 
-#board {
-    aspect-ratio: 1/1;
-    height: 97%;
-    margin-top:1%;
-    margin-bottom:1%;
-    margin-left: 1%;
-    float: left;
-
-    border: solid;
-    border-color: white;
-    border-width: 1px;
-    border-radius:15px;
+.content {
+    height:80vh;
+    color:white;
 }
 
-#sidebar {
-    aspect-ratio: 1/3;
-    height: 97%;
-    margin-top:1%;
-    margin-bottom:1%;
-    margin-right:1%;
-    float: right;
-
-    border: solid;
-    border-color: white;
-    border-width: 1px;
-    border-radius:15px;
-}
-
-.lightSquare {
-    aspect-ratio: 1/1;
-    background-color: rgb(244, 204, 144);
-    height: 12%;
-}
-
-.darkSquare {
-    aspect-ratio: 1/1;
-    background-color: rgb(41, 40, 57);
-    height: 12%;
-}
-
-.loginForm {
-    margin: 0;
-    width:98vh;
-    height:98vh;
-
-    top:50%;
-    left:50%;
-    -ms-transform: translate(-50%, -50%);
-    transform: translate(-50%, -50%);
-
-    text-align: center;
-    align-content: center;
-}
-
-.loginInput {
-    text-align: center;
-    margin: 10px;
-    width: 50%;
-    height: 50px;
+.footer {
+    height:5vh;
+    color:white;
+    text-align:center;
 }

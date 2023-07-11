@@ -72,3 +72,9 @@ def localGame(request):
 
 def networkGame(request):
     pass
+
+def review(request):
+    return render(request, 'pychess/review.html')
+
+def spectate(request):
+    return render(request, 'pychess/spectate.html')

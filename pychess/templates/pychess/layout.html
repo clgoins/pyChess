@@ -2,114 +2,42 @@
 
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <title>{% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'pychess/styles.css' %}">
-</head>
-
-<body>
-    <div id="window" style="width:98vw; height:98vh;">
-        <div id="mainContent">
-            <div id="board">
-                <table style="height:100%; width:100%">
-                    <tr>
-                        <td name="A8" id="A8" class="lightSquare"></td>
-                        <td id="B8" class="darkSquare"></td>
-                        <td id="C8" class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                    </tr>
-                    <tr>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                    </tr>
-                    <tr>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                    </tr>
-                    <tr>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                    </tr>
-                    <tr>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                    </tr>
-                    <tr>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                    </tr>
-                    <tr>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                    </tr>
-                    <tr>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                        <td class="darkSquare"></td>
-                        <td class="lightSquare"></td>
-                    </tr>
-                </table>
+    <head>
+        <title>{% block title %}{% endblock %}</title>
+        <link rel="stylesheet" href="{% static 'pychess/styles.css' %}">
+    </head>
+    <body>
+        <div class="header">
+            <h1 style="text-indent:10px;">pyChess</h1>
+            {% if user.is_authenticated %}
+            <div style="text-indent:10px;">
+                You are logged in as <strong>{{ user }}</strong>
             </div>
-            <div id="sidebar">
+            {% else %}
+            <div style="text-indent:10px;">
+                You are not logged in
+            </div>
+            {% endif %}
+            <div class="navbar">
                 {% if user.is_authenticated %}
-                    <span style="color:white">You are logged in as <strong>{{ user }}</strong>. <a href="{% url 'logout' %}">Logout</a></span>
+                <a class="navlink" href="{% url 'newGame' %}">Play</a>
+                <a class="navlink" href="{% url 'review' %}">Review</a>
+                <a class="navlink" href="{% url 'spectate' %}">Spectate</a>
                 {% else %}
-                    <span style="color:white">You are not logged in.</span>
+                <a class="navlink" href="{% url 'login' %}">Login</a>
+                <a class="navlink" href="{% url 'register' %}">Register</a>
+                <a class="navlink" href="{% url 'spectate' %}">Spectate</a>
                 {% endif %}
             </div>
-
         </div>
-
-
-        <div id="overlayContent">
+        <hr>
+        <div class="content">
         {% block body %}
         {% endblock %}
         </div>
-    </div>
-
-</body>
+        <hr>
+        <div class="footer">
+            <h3>a cs50 project by Chris Goins</h3>
+        </div>
+    </body>
 </html>

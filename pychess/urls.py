@@ -9,6 +9,8 @@ urlpatterns = [
     path("register", views.register, name="register"),
     path("play", views.newGame, name="newGame"),
     path("play/local", views.localGame, name="localGame"),
-    path("play/network", views.networkGame, name="networkGame")
+    path("play/network", views.networkGame, name="networkGame"),
+    path("review", views.review, name="review"),
+    path("spectate", views.spectate, name="spectate")
     
 ]

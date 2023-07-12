@@ -11,6 +11,12 @@ urlpatterns = [
     path("play/local", views.localGame, name="localGame"),
     path("play/network", views.networkGame, name="networkGame"),
     path("review", views.review, name="review"),
-    path("spectate", views.spectate, name="spectate")
+    path("spectate", views.spectate, name="spectate"),
+
+
+    # API ==============
+    path("check", views.checkMoves, name="checkMoves"),
+    path("boardState", views.getBoardState, name="boardState"),
+    path("move", views.submitMove, name="submitMove")
     
 ]

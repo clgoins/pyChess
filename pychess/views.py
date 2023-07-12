@@ -67,7 +67,7 @@ def play(request):
 
 
 def localGame(request):
-    return render(request, 'pychess/localGame.html')
+    return render(request, 'pychess/localGame.html', {'board':chessEngine.generateBoard(1)})
 
 
 def networkGame(request):
@@ -105,3 +105,15 @@ def review(request):
 
 def spectate(request):
     return render(request, 'pychess/spectate.html')
+
+
+# API =====================
+
+def getBoardState(request):
+    pass
+
+def checkMoves(request):
+    pass
+
+def submitMove(request):
+    pass

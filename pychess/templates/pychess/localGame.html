@@ -8,4 +8,89 @@ Play Chess!
 
 {% block body %}
     You are starting a local game
+    <div id="board">
+
+    </div>
+
+    <script>
+        let checkingMove = false;
+
+        drawBoard();
+
+        function drawBoard()
+        {
+            let board = document.createElement("table");
+            let isLight=true;
+            let cellSize;
+            if (window.innerHeight < window.innerWidth)
+            {
+                cellSize = `${window.innerHeight / 10}px`;
+            }
+            else
+            {
+                cellSize = `${window.innerWidth / 10}px`;
+            }
+
+            for (let i = 0; i < 8; i++)
+            {
+                let row = document.createElement("tr");
+                for (let j = 0; j < 8; j++)
+                {
+                    let cell = document.createElement("td");
+                    cell.style.width = cellSize;
+                    cell.style.height = cellSize;
+                    cell.id = `${i}, ${j}`;
+                    if(isLight)
+                        cell.style.backgroundColor = "#FFFFFF";
+                    else
+                        cell.style.backgroundColor = "#000000"
+
+                    cell.addEventListener('click', () => {clickCell(cell.id);})
+
+                    row.append(cell);
+                    isLight = !isLight;
+                }
+                board.append(row);
+                isLight = !isLight;
+            }
+
+            document.querySelector('#board').append(board);
+        }
+    
+        function drawPieces(boardState)
+        {
+            //iterate through board state
+            //for each piece, if it's position is not null
+            //document.querySelector(`#${piece.position}).append(*image file*)
+
+            //maybe instead of adding a click listener to each cell, it should be done here instead.
+        }
+    
+        function clickCell(position)
+        {
+            console.log(position);
+        }
+
+        function clickPiece()
+        {
+            //when piece is clicked
+            //if checkingMoves == false
+            //{
+            //  checkingMoves = true
+            //  fetch checkMoves, passing the piece ID as a GET parameter
+            //  color the valid moves green
+            //}
+            //else
+            //{
+            //  checkingMoves = false
+            //  fetch submitMove, passing the piece and position as POST parameters
+            //  get the board state and redraw.
+            //  if the move was invalid, do nothing and let the player try again
+            //  if the move was valid, begin polling the db on a set interval to check for a move made by the opposing player
+            //}
+
+            //only allow clicks on a piece belonging to the player whose turn it is
+        }
+
+    </script>
 {% endblock %}

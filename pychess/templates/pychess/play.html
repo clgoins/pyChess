@@ -1,19 +1,22 @@
 {% extends 'pychess\layout.html' %}
 
+
+{% block title %}
+Play chess!
+{% endblock %}
+
+
 {% block body %}
-
-    <div style="background-color:rgb(90, 90, 90); height:50vh; width:25vw;">
-            <div id="local" style="border:solid; width:100%; height:33%; font-size:72px; text-align: center;">Local</div>
-            <div id="network" style="border:solid; width:100%; height:32%; font-size:72px; text-align: center;">Network</div>
-            <div id="back" style="border:solid; width:100%; height:32%; font-size:72px; text-align: center;">Go Back</div>
+    <div style="font-size: 20px;">
+        <div>
+            <a href="{% url 'localGame' %}">Local Game</a>
+        </div>
+        <div>
+            <a href="{% url 'networkGame' %}?g=new">New Network Game</a>
+        </div>
+        <div>
+            <a href="{% url 'networkGame' %}?g=join">Join Network Game</a>
+        </div>
     </div>
-
-
-    <script>
-        document.querySelector("#back").addEventListener("click", () => {
-            window.location.href = "{% url 'index' %}"
-        })
-
-    </script>
 
 {% endblock %}

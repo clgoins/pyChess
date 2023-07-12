@@ -1,0 +1,22 @@
+{% extends "pychess/layout.html "%}
+
+
+{% block title %}
+Play Chess!
+{% endblock %}
+
+
+{% block body %}
+    {% if newGame == True %}
+        <div>
+            Starting a new game! <br>Your Room Code is <strong>{{ roomCode }}</strong><br> Share this with your friend to let them join!
+        </div>
+    {% else %}
+        Please enter the Room Code you'd like to join:
+        <form action="{% url 'networkGame' %}" method="POST">
+            <input name="roomCode" type="text" placeholder="Room Code">
+            <input type="submit" value="Join!">
+            {% csrf_token %}
+        </form>
+    {% endif %}
+{% endblock %}

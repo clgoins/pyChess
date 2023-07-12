@@ -6,9 +6,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
 from .models import *
 from . import chessEngine
-
-# Create your views here.
-
+import string, random
 
 def index(request):
     return render(request, 'pychess/index.html')
@@ -64,17 +62,46 @@ def register(request):
         return render(request, 'pychess/register.html')
     
 
-def newGame(request):
+def play(request):
     return render(request, 'pychess/play.html')
 
+
 def localGame(request):
-    pass
+    return render(request, 'pychess/localGame.html')
+
 
 def networkGame(request):
-    pass
+    if request.method == 'GET':
+        if request.GET['g'] == 'new':
+            # Create and render a new game, along with a message to the user containing their room code to share with their friend
+
+            # Generate a room code (random string of characters and numbers, 6 characters long). If a game already exists with that code, generate a new one. Once a unique code is found, break out of the loop.
+            while True:
+                roomCode = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+                try:
+                    Game.objects.get(roomCode=roomCode)
+                except:
+                    break
+
+            newGame = Game(roomCode=roomCode, player1=request.user, isActive=True)
+            newGame.save()
+
+            return render(request, 'pychess/networkGame.html', {'newGame':True, 'roomCode':roomCode})
+        
+        elif request.GET['g'] == 'join':
+            # Should render a form to prompt the user for a room code to join
+            return render(request, 'pychess/networkGame.html', {'newGame':False})
+        
+    elif request.method == 'POST':
+        # this is where the room code should be submitted in the event that the user is joining an existing game
+        pass
+    else:
+        return redirect(index)
+
 
 def review(request):
     return render(request, 'pychess/review.html')
+
 
 def spectate(request):
     return render(request, 'pychess/spectate.html')

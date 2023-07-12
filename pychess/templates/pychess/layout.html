@@ -7,10 +7,10 @@
         <link rel="stylesheet" href="{% static 'pychess/styles.css' %}">
     </head>
     <body>
-        <div class="header">
+        <div class="header" style="font-size:20px">
             <h1 style="text-indent:10px;">pyChess</h1>
             {% if user.is_authenticated %}
-            <div style="text-indent:10px;">
+            <div style="text-indent:10px">
                 You are logged in as <strong>{{ user }}</strong>
             </div>
             {% else %}
@@ -20,7 +20,7 @@
             {% endif %}
             <div class="navbar">
                 {% if user.is_authenticated %}
-                <a class="navlink" href="{% url 'newGame' %}">Play</a>
+                <a class="navlink" href="{% url 'play' %}">Play</a>
                 <a class="navlink" href="{% url 'review' %}">Review</a>
                 <a class="navlink" href="{% url 'spectate' %}">Spectate</a>
                 {% else %}

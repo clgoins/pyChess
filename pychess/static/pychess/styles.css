@@ -2,9 +2,14 @@ body {
     background-color: rgb(31, 27, 82);
 }
 
+a {
+    color:rgb(233, 208, 145);
+}
+
+
 .header {
     position:relative;
-    min-height:15vh;
+    min-height:150px;
     color:white;
 
 }

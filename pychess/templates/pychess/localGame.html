@@ -52,14 +52,17 @@ Play Chess!
                     let cell = document.createElement("td");
                     cell.style.width = cellSize;
                     cell.style.height = cellSize;
-                    cell.id = `a${j}_${i}`;
+                    cell.id = `p${j}_${i}`;
                     if(isLight)
                         cell.style.backgroundColor = "#FFFFFF";
                     else
                         cell.style.backgroundColor = "#000000"
 
+                    cell.addEventListener('click', () => clickCell(cell.id));
+
                     row.append(cell);
                     isLight = !isLight;
+ 
                 }
                 board.append(row);
                 isLight = !isLight;
@@ -88,7 +91,7 @@ Play Chess!
                     image.addEventListener('click', () => clickPiece(pieces[i], boardState[pieces[i]]))
 
                     //find the correct space to place it, and append the image file
-                    document.querySelector(`#a${boardState[pieces[i]]['rank']}_${boardState[pieces[i]]['file']}`).append(image);
+                    document.querySelector(`#p${boardState[pieces[i]]['rank']}_${boardState[pieces[i]]['file']}`).append(image);
                 }
             }
         }
@@ -143,6 +146,10 @@ Play Chess!
             return image;
         }
 
+        function clickCell(position)
+        {
+            console.log(position);
+        }
 
         function clickPiece(pieceID, pieceInfo)
         {

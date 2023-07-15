@@ -1,4 +1,5 @@
 {% extends "pychess/layout.html "%}
+{% load static %}
 
 
 {% block title %}
@@ -14,9 +15,21 @@ Play Chess!
 
     <script>
         let checkingMove = false;
+        let boardState = {};
 
         drawBoard();
+        boardState = getBoardState();
+        boardState.then((state) => drawPieces(state));
 
+        //returns a promise that will contain a JSON object with the current board state once fulfilled
+        async function getBoardState()
+        {
+            const response = await fetch("{% url 'boardState' %}");
+            const state = await response.json();
+            return state;
+        }
+
+        //renders the checkerboard pattern on the screen, in the form of an HTML table
         function drawBoard()
         {
             let board = document.createElement("table");
@@ -39,13 +52,11 @@ Play Chess!
                     let cell = document.createElement("td");
                     cell.style.width = cellSize;
                     cell.style.height = cellSize;
-                    cell.id = `${i}, ${j}`;
+                    cell.id = `a${j}_${i}`;
                     if(isLight)
                         cell.style.backgroundColor = "#FFFFFF";
                     else
                         cell.style.backgroundColor = "#000000"
-
-                    cell.addEventListener('click', () => {clickCell(cell.id);})
 
                     row.append(cell);
                     isLight = !isLight;
@@ -56,23 +67,91 @@ Play Chess!
 
             document.querySelector('#board').append(board);
         }
-    
+
+        //reads each piece position from the boardState, and adds <img> tags with click handlers to represent each piece to the board
         function drawPieces(boardState)
         {
-            //iterate through board state
-            //for each piece, if it's position is not null
-            //document.querySelector(`#${piece.position}).append(*image file*)
+            //grab an array of the keys from the boardState object to iterate through
+            pieces = Object.keys(boardState);
 
-            //maybe instead of adding a click listener to each cell, it should be done here instead.
+            //index 0 is "playerToMove" and index 1 is "turnNumber", so start from index 2
+            for(let i = 2; i < pieces.length; i++)
+            {
+                //only draw a piece if it has not been captured
+                if(!boardState[pieces[i]]['captured'])
+                {
+                    //create an image tag for each piece
+                    const pieceCode = pieces[i][0] + pieces[i][1];
+                    const image = getImage(pieceCode);
+                    
+                    //when the piece is clicked, call clickPiece() and pass in all the information we have about the piece in question
+                    image.addEventListener('click', () => clickPiece(pieces[i], boardState[pieces[i]]))
+
+                    //find the correct space to place it, and append the image file
+                    document.querySelector(`#a${boardState[pieces[i]]['rank']}_${boardState[pieces[i]]['file']}`).append(image);
+                }
+            }
         }
     
-        function clickCell(position)
+
+        function getImage(pieceCode)
         {
-            console.log(position);
+            image = document.createElement("img");
+
+            switch (pieceCode)
+                {
+                    case 'dp':
+                        image.src="{% static '/pychess/images/pawn_dark.png' %}";
+                        break;
+                    case 'lp':
+                        image.src="{% static '/pychess/images/pawn_light.png' %}";
+                        break;
+                    case 'dr':
+                        image.src="{% static '/pychess/images/rook_dark.png' %}";
+                        break;
+                    case 'lr':
+                        image.src="{% static '/pychess/images/rook_light.png' %}";
+                        break;
+                    case 'dn':
+                        image.src="{% static '/pychess/images/knight_dark.png' %}";
+                        break;
+                    case 'ln':
+                        image.src="{% static '/pychess/images/knight_light.png' %}";
+                        break;
+                    case 'db':
+                        image.src="{% static '/pychess/images/bishop_dark.png' %}";
+                        break;
+                    case 'lb':
+                        image.src="{% static '/pychess/images/bishop_light.png' %}";
+                        break;
+                    case 'dq':
+                        image.src="{% static '/pychess/images/queen_dark.png' %}";
+                        break;
+                    case 'lq':
+                        image.src="{% static '/pychess/images/queen_light.png' %}";
+                        break;
+                    case 'dk':
+                        image.src="{% static '/pychess/images/king_dark.png' %}";
+                        break;
+                    case 'lk':
+                        image.src="{% static '/pychess/images/king_light.png' %}";
+                        break;
+                    default:
+                        break;
+                }
+
+            return image;
         }
 
-        function clickPiece()
+
+        function clickPiece(pieceID, pieceInfo)
         {
+            //pieceID will be the unique ID of the specific piece we're working with (eg 'lp1', 'db2', etc)
+            //pieceInfo is a JSON object containing that pieces current rank, file, and a boolean to represent whether it's been captured
+
+            console.log(pieceID);
+            console.log(pieceInfo);
+
             //when piece is clicked
             //if checkingMoves == false
             //{

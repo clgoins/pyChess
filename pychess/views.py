@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect
 import json
 from django.contrib.auth import authenticate, login, logout
@@ -67,7 +67,7 @@ def play(request):
 
 
 def localGame(request):
-    return render(request, 'pychess/localGame.html', {'board':chessEngine.generateBoard(1)})
+    return render(request, 'pychess/localGame.html')
 
 
 def networkGame(request):
@@ -110,10 +110,10 @@ def spectate(request):
 # API =====================
 
 def getBoardState(request):
-    pass
+    return JsonResponse(chessEngine.createNewBoard())
 
 def checkMoves(request):
-    pass
+    return JsonResponse({'message':'this is a test response'})
 
 def submitMove(request):
     pass

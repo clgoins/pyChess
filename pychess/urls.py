@@ -16,7 +16,7 @@ urlpatterns = [
 
     # API ==============
     path("check", views.checkMoves, name="checkMoves"),
-    path("boardState", views.getBoardState, name="boardState"),
+    path("gameState", views.getGameState, name="gameState"),
     path("move", views.submitMove, name="submitMove")
     
 ]

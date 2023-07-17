@@ -13,18 +13,26 @@ Play Chess!
 
     </div>
 
+    {% csrf_token %}
+
+
     <script>
-        let checkingMove = false;
-        let boardState = {};
+        var checkingMove = false;
+        var gameState = {};
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
         drawBoard();
-        boardState = getBoardState();
-        boardState.then((state) => drawPieces(state));
 
-        //returns a promise that will contain a JSON object with the current board state once fulfilled
-        async function getBoardState()
+        let statePromise = getGameState();
+        statePromise.then((state) => {
+            gameState = state;
+            drawPieces(state);
+        });
+
+        //returns a promise that will contain a JSON object with the current game state once fulfilled
+        async function getGameState()
         {
-            const response = await fetch("{% url 'boardState' %}");
+            const response = await fetch("{% url 'gameState' %}");
             const state = await response.json();
             return state;
         }
@@ -58,7 +66,7 @@ Play Chess!
                     else
                         cell.style.backgroundColor = "#000000"
 
-                    cell.addEventListener('click', () => clickCell(cell.id));
+                    cell.addEventListener('click', (event) => clickCell(event, cell.id));
 
                     row.append(cell);
                     isLight = !isLight;
@@ -71,32 +79,32 @@ Play Chess!
             document.querySelector('#board').append(board);
         }
 
-        //reads each piece position from the boardState, and adds <img> tags with click handlers to represent each piece to the board
-        function drawPieces(boardState)
+        //reads each piece position from the gameState, and adds <img> tags with click handlers to represent each piece to the board
+        function drawPieces(gameState)
         {
-            //grab an array of the keys from the boardState object to iterate through
-            pieces = Object.keys(boardState);
+            //grab an array of the keys from the gameState object to iterate through
+            pieces = Object.keys(gameState);
 
-            //index 0 is "playerToMove" and index 1 is "turnNumber", so start from index 2
-            for(let i = 2; i < pieces.length; i++)
+            //index 0 is "turnNumber", so start from index 1
+            for(let i = 1; i < pieces.length; i++)
             {
                 //only draw a piece if it has not been captured
-                if(!boardState[pieces[i]]['captured'])
+                if(!gameState[pieces[i]]['captured'])
                 {
                     //create an image tag for each piece
                     const pieceCode = pieces[i][0] + pieces[i][1];
                     const image = getImage(pieceCode);
                     
                     //when the piece is clicked, call clickPiece() and pass in all the information we have about the piece in question
-                    image.addEventListener('click', () => clickPiece(pieces[i], boardState[pieces[i]]))
+                    image.addEventListener('click', (event) => clickPiece(event, pieces[i], gameState[pieces[i]]))
 
                     //find the correct space to place it, and append the image file
-                    document.querySelector(`#p${boardState[pieces[i]]['rank']}_${boardState[pieces[i]]['file']}`).append(image);
+                    document.querySelector(`#p${gameState[pieces[i]]['rank']}_${gameState[pieces[i]]['file']}`).append(image);
                 }
             }
         }
-    
 
+        //long switch statement to pick out the correct image for a piece based on its ID
         function getImage(pieceCode)
         {
             image = document.createElement("img");
@@ -146,36 +154,66 @@ Play Chess!
             return image;
         }
 
-        function clickCell(position)
+        //click handler for an empty cell
+        function clickCell(event, position)
         {
-            console.log(position);
-        }
+            if (checkingMove === true)
+            {
 
-        function clickPiece(pieceID, pieceInfo)
-        {
-            //pieceID will be the unique ID of the specific piece we're working with (eg 'lp1', 'db2', etc)
-            //pieceInfo is a JSON object containing that pieces current rank, file, and a boolean to represent whether it's been captured
-
-            console.log(pieceID);
-            console.log(pieceInfo);
-
-            //when piece is clicked
-            //if checkingMoves == false
-            //{
-            //  checkingMoves = true
-            //  fetch checkMoves, passing the piece ID as a GET parameter
-            //  color the valid moves green
-            //}
-            //else
-            //{
-            //  checkingMoves = false
+                checkingMove = false
+                console.log(position);
             //  fetch submitMove, passing the piece and position as POST parameters
             //  get the board state and redraw.
             //  if the move was invalid, do nothing and let the player try again
             //  if the move was valid, begin polling the db on a set interval to check for a move made by the opposing player
-            //}
+            }
+        }
 
-            //only allow clicks on a piece belonging to the player whose turn it is
+        //click handler for any of the pieces on the board
+        function clickPiece(event, pieceID, pieceInfo)
+        {
+            //pieceID will be the unique ID of the specific piece we're working with (eg 'lp1', 'db2', etc)
+            //pieceInfo is a JSON object containing that pieces current rank, file, and a boolean to represent whether it's been captured
+
+            //this line prevents the clickCell() handler from firing at the same time as clickPiece()
+            event.stopPropagation();
+
+            //when piece is clicked
+            if (checkingMove === false)
+            {
+                //this wacky statement looks at the turn number & the first character of the pieceID
+                //if the turn number is even, it's light to move, otherwise its dark to move
+                //first character of pieceID will be 'l' for light or 'd' for dark
+                if((gameState['turnNumber'] % 2 === 0 && pieceID[0] === 'l') || (gameState['turnNumber'] % 2 === 1 && pieceID[0] === 'd'))
+                {
+                    checkingMove = true
+                    checkMoves(pieceID, pieceInfo);
+                }
+            }
+
+        }
+
+        //makes a call to the back end to get a list of valid coordinates a piece can move to, and then colors those squares green
+        function checkMoves(pieceID, pieceInfo)
+        {
+            
+            fetch("{% url 'checkMoves' %}", {
+                method:'POST',
+                headers: {'X-CSRFToken':csrftoken},
+                mode: 'same-origin',
+                body: JSON.stringify({
+                    id:pieceID,
+                    info:pieceInfo
+                })
+            })
+            .then(response => response.json())
+            .then(moveList => {
+                console.log(pieceInfo);
+                moveList['validMoves'].forEach((move) => {
+                    cellToHighlight = document.querySelector(`#p${pieceInfo['rank'] + move[0]}_${pieceInfo['file'] + move[1]}`);
+                    cellToHighlight.style.backgroundColor = 'green';
+                })
+            })
         }
 
     </script>

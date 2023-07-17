@@ -109,11 +109,28 @@ def spectate(request):
 
 # API =====================
 
-def getBoardState(request):
+def getGameState(request):
     return JsonResponse(chessEngine.createNewBoard())
 
+# takes some info about a piece on the board and returns a list of all of its valid moves
 def checkMoves(request):
-    return JsonResponse({'message':'this is a test response'})
+    
+    if request.method == 'POST':
+
+        # get some information about the piece to move from the POST request data
+        data = json.loads(request.body)
+        pieceID = data.get('id')
+        pieceInfo = data.get('info')
+
+        # call the chessEngine to generate a list of valid moves for the given piece
+        moveList = chessEngine.checkMoves(pieceID,pieceInfo)
+
+        # return the list of moves to the front end
+        return JsonResponse(moveList)
+    
+    else:
+        return JsonResponse({'error':'invalid request method'}, status=405)
+
 
 def submitMove(request):
-    pass
+    return JsonResponse({'message':'this is a test response'})

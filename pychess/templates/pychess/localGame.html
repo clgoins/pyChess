@@ -13,19 +13,21 @@ Play Chess!
 
     </div>
 
+
     {% csrf_token %}
 
 
     <script>
         var checkingMove = false;
         var gameState = {};
+        var activePiece = null;
         const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-        drawBoard();
+        var gameID = '{{ gameID }}'
 
         let statePromise = getGameState();
         statePromise.then((state) => {
             gameState = state;
+            drawBoard();
             drawPieces(state);
         });
 
@@ -76,6 +78,7 @@ Play Chess!
                 isLight = !isLight;
             }
 
+            document.querySelector('#board').innerHTML = '';
             document.querySelector('#board').append(board);
         }
 
@@ -157,15 +160,32 @@ Play Chess!
         //click handler for an empty cell
         function clickCell(event, position)
         {
-            if (checkingMove === true)
+            if (checkingMove === true && activePiece != null)
             {
 
-                checkingMove = false
-                console.log(position);
-            //  fetch submitMove, passing the piece and position as POST parameters
-            //  get the board state and redraw.
-            //  if the move was invalid, do nothing and let the player try again
-            //  if the move was valid, begin polling the db on a set interval to check for a move made by the opposing player
+                checkingMove = false;
+
+                //  fetch submitMove, passing the piece and position as POST parameters
+                fetch("{% url 'submitMove' %}", {
+                    method:'POST',
+                    headers: {'X-CSRFToken':csrftoken},
+                    mode: 'same-origin',
+                    body: JSON.stringify({
+                        id:activePiece,
+                        pos:position,
+                        game:parseInt(gameID)
+                    })
+                })
+                .then(response => response.json())
+                .then(result =>         {
+                    console.log(result);
+                    let statePromise = getGameState();
+                    statePromise.then((state) => {
+                    gameState = state;
+                    drawBoard();
+                    drawPieces(state);
+                    });
+                });
             }
         }
 
@@ -187,13 +207,14 @@ Play Chess!
                 if((gameState['turnNumber'] % 2 === 0 && pieceID[0] === 'l') || (gameState['turnNumber'] % 2 === 1 && pieceID[0] === 'd'))
                 {
                     checkingMove = true
+                    activePiece = pieceID;
                     checkMoves(pieceID, pieceInfo);
                 }
             }
 
         }
 
-        //makes a call to the back end to get a list of valid coordinates a piece can move to, and then colors those squares green
+        //makes a call to the backend to get a list of valid coordinates a piece can move to, and then colors those squares green
         function checkMoves(pieceID, pieceInfo)
         {
             
@@ -203,14 +224,14 @@ Play Chess!
                 mode: 'same-origin',
                 body: JSON.stringify({
                     id:pieceID,
-                    info:pieceInfo
+                    info:pieceInfo,
+                    game:parseInt(gameID)
                 })
             })
             .then(response => response.json())
             .then(moveList => {
-                console.log(pieceInfo);
                 moveList['validMoves'].forEach((move) => {
-                    cellToHighlight = document.querySelector(`#p${pieceInfo['rank'] + move[0]}_${pieceInfo['file'] + move[1]}`);
+                    cellToHighlight = document.querySelector(`#p${move[0]}_${move[1]}`);
                     cellToHighlight.style.backgroundColor = 'green';
                 })
             })

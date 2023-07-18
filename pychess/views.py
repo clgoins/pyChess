@@ -11,6 +11,7 @@ import string, random
 def index(request):
     return render(request, 'pychess/index.html')
 
+
 def loginView(request):
 
     if request.method == 'POST':
@@ -29,6 +30,7 @@ def loginView(request):
 
     else:
         return render(request, 'pychess/login.html')
+
 
 def logoutView(request):
     logout(request)
@@ -67,7 +69,12 @@ def play(request):
 
 
 def localGame(request):
-    return render(request, 'pychess/localGame.html')
+    # create a new game entry in the DB
+    # local games will use the same player name for both player 1 and player 2, with no room code
+    newGame = Game(player1=request.user, player2=request.user, isActive=True)
+    newGame.save()
+
+    return render(request, 'pychess/localGame.html', {'gameID':newGame.id})
 
 
 def networkGame(request):
@@ -112,6 +119,7 @@ def spectate(request):
 def getGameState(request):
     return JsonResponse(chessEngine.createNewBoard())
 
+
 # takes some info about a piece on the board and returns a list of all of its valid moves
 def checkMoves(request):
     
@@ -121,9 +129,10 @@ def checkMoves(request):
         data = json.loads(request.body)
         pieceID = data.get('id')
         pieceInfo = data.get('info')
+        gameID = data.get('game')
 
         # call the chessEngine to generate a list of valid moves for the given piece
-        moveList = chessEngine.checkMoves(pieceID,pieceInfo)
+        moveList = chessEngine.checkMoves(gameID, pieceID, pieceInfo)
 
         # return the list of moves to the front end
         return JsonResponse(moveList)
@@ -133,4 +142,20 @@ def checkMoves(request):
 
 
 def submitMove(request):
-    return JsonResponse({'message':'this is a test response'})
+
+    if request.method == 'POST':
+        
+        # get the info about the requested move from the POST request data
+        data = json.loads(request.body)
+        pieceID = data.get('id')
+        position = data.get('pos')
+        gameID = data.get('game')
+
+        if(chessEngine.move(gameID, pieceID, position)):
+            return JsonResponse({'message':'success'})
+        else:
+            return JsonResponse({'message':'failure'})
+        
+        
+    else:
+        return JsonResponse({'error':'invalid request method'}, status=405)

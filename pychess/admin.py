@@ -9,3 +9,7 @@ class UserAdmin(admin.ModelAdmin):
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
     pass
+
+@admin.register(Move)
+class MoveAdmin(admin.ModelAdmin):
+    pass

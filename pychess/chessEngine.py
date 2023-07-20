@@ -1,78 +1,102 @@
 from .models import *
+import random
 
 
-def createNewBoard():
+def createNewBoard(game):
+    
+    # Dictionary describing a bunch of info about the game
     boardState = {}
+    boardState['id'] = game.id
+    boardState['roomCode'] = game.roomCode
+    boardState['player1'] = game.player1.username
+    boardState['player2'] = game.player2.username
     boardState['turnNumber'] = 0
-    boardState['dp1'] = {'rank':0, 'file':1, 'captured':False, 'hasMoved':False}
-    boardState['dp2'] = {'rank':1, 'file':1, 'captured':False, 'hasMoved':False}
-    boardState['dp3'] = {'rank':2, 'file':1, 'captured':False, 'hasMoved':False}
-    boardState['dp4'] = {'rank':3, 'file':1, 'captured':False, 'hasMoved':False}
-    boardState['dp5'] = {'rank':4, 'file':1, 'captured':False, 'hasMoved':False}
-    boardState['dp6'] = {'rank':5, 'file':1, 'captured':False, 'hasMoved':False}
-    boardState['dp7'] = {'rank':6, 'file':1, 'captured':False, 'hasMoved':False}
-    boardState['dp8'] = {'rank':7, 'file':1, 'captured':False, 'hasMoved':False}
+    
+    # Final entry will be a list of 32 smaller dictionaries describing each piece on the board
+    pieceList = []
 
-    boardState['lp1'] = {'rank':0, 'file':6, 'captured':False, 'hasMoved':False}
-    boardState['lp2'] = {'rank':1, 'file':6, 'captured':False, 'hasMoved':False}
-    boardState['lp3'] = {'rank':2, 'file':6, 'captured':False, 'hasMoved':False}
-    boardState['lp4'] = {'rank':3, 'file':6, 'captured':False, 'hasMoved':False}
-    boardState['lp5'] = {'rank':4, 'file':6, 'captured':False, 'hasMoved':False}
-    boardState['lp6'] = {'rank':5, 'file':6, 'captured':False, 'hasMoved':False}
-    boardState['lp7'] = {'rank':6, 'file':6, 'captured':False, 'hasMoved':False}
-    boardState['lp8'] = {'rank':7, 'file':6, 'captured':False, 'hasMoved':False}
+    for i in range(32):
+        piece = {}
 
-    boardState['dr1'] = {'rank':0, 'file':0, 'captured':False, 'hasMoved':False}
-    boardState['dn1'] = {'rank':1, 'file':0, 'captured':False, 'hasMoved':False}
-    boardState['db1'] = {'rank':2, 'file':0, 'captured':False, 'hasMoved':False}
-    boardState['dq1'] = {'rank':3, 'file':0, 'captured':False, 'hasMoved':False}
-    boardState['dk1'] = {'rank':4, 'file':0, 'captured':False, 'hasMoved':False}
-    boardState['db2'] = {'rank':5, 'file':0, 'captured':False, 'hasMoved':False}
-    boardState['dn2'] = {'rank':6, 'file':0, 'captured':False, 'hasMoved':False}
-    boardState['dr2'] = {'rank':7, 'file':0, 'captured':False, 'hasMoved':False}
+        piece['id'] = i
 
-    boardState['lr1'] = {'rank':0, 'file':7, 'captured':False, 'hasMoved':False}
-    boardState['ln1'] = {'rank':1, 'file':7, 'captured':False, 'hasMoved':False}
-    boardState['lb1'] = {'rank':2, 'file':7, 'captured':False, 'hasMoved':False}
-    boardState['lq1'] = {'rank':3, 'file':7, 'captured':False, 'hasMoved':False}
-    boardState['lk1'] = {'rank':4, 'file':7, 'captured':False, 'hasMoved':False}
-    boardState['lb2'] = {'rank':5, 'file':7, 'captured':False, 'hasMoved':False}
-    boardState['ln2'] = {'rank':6, 'file':7, 'captured':False, 'hasMoved':False}
-    boardState['lr2'] = {'rank':7, 'file':7, 'captured':False, 'hasMoved':False}
+        # Tried to order these as they appear on the board from left to right, top to bottom
+        # First 16 are dark pieces, next 16 are light
+        if i < 16:
+            piece['color'] = 'dark'
+        else:
+            piece['color'] = 'light'
+
+        # This looks dumb but I'm just trying to set the piece type, again from left to right, top to bottom.
+        # First and last 8 are rook, knight, bishop, queen, king, bishop, knight, and rook; middle 16 are all pawns
+        if i < 8 or i >= 24:
+            if i == 0 or i == 7 or i == 24 or i == 31:
+                piece['type'] = 'rook'
+            elif i == 1 or i == 6 or i == 25 or i == 30:
+                piece['type'] = 'knight'
+            elif i == 2 or i == 5 or i == 26 or i == 29:
+                piece['type'] = 'bishop'
+            elif i == 3 or i == 27:
+                piece['type'] = 'queen'
+            else:
+                piece['type'] = 'king'
+        else:
+            piece['type'] = 'pawn'
+
+        # Setting each pieces initial position. rank is horizontal pos & file is vertical pos, per chess terminology
+        # 0,0 is the top left corner; 8,8 is the bottom right.
+        # Generally in chess the rank is notated with a letter 'A' thru 'H' and the file is a number 1 thru 8;
+        # with 'A1' being the bottom left corner and 'H8' being the top right. A regular coordinate system is a little easier to work with in code,
+        # so I've written a few conversion functions to convert between my coordinate system for doing logic behind the scenes, and the conventional rank-file system to display to the end user.
+        if i < 8:
+            piece['rank'] = i
+            piece['file'] = 0
+        elif i >=8 and i < 16:
+            piece['rank'] = i - 8
+            piece['file'] = 1
+        elif i >= 16 and i < 24:
+            piece['rank'] = i - 16
+            piece['file'] = 6
+        else:
+            piece['rank'] = i - 24
+            piece['file'] = 7
+
+        piece['captured'] = False
+
+        pieceList.append(piece)
+
+
+    boardState['pieces'] = pieceList
 
     return boardState
 
-def checkMoves(gameID, pieceID, pieceInfo):
 
-    # generate current board state
-    # create list of every valid space the given piece can move to
+# creates list of every valid space a given piece can move to
+def checkPieceMoves(gameState, pieceID):
+
+    piece = gameState['pieces'][pieceID]
 
     # TODO: should generate accurate absolute board coordinates
-    if pieceID[1] == 'p':
-        return {'validMoves': [(0,1)]}
+    if piece['type'] == 'pawn':
+        return {'validMoves': [(4,4)]}
     else:
         return {'validMoves':[]}
 
 
 # attempts to move a piece on the board. returns True if successful or False otherwise
-def move(gameID, pieceID, position):
+def move(gameID, piece, position):
+
     boardState = generateBoardState(gameID)
 
-    # position will be a string 'px_y' where x & y are the desired coordinates. This converts that string to a tuple of ints to work with.
-    try:
-        posX = int(position[1])
-        posY = int(position[3])
-    except ValueError:
-        return False 
-    coordinates = (posX,posY)
-
     # double check that the provided move is valid (should be in the list returned by checkMoves())
-    validMoves = checkMoves(gameID, pieceID, boardState[pieceID])
-    if coordinates in validMoves['validMoves']:
+    validMoves = checkPieceMoves(boardState, piece['id'])
+
+    if position in validMoves['validMoves']:
 
         # update the 'move' db with the pieces new position
-        newMove = Move(gameID = Game.objects.get(id=gameID), moveNumber = boardState['turnNumber'], piece = pieceID, rankFile = coordToRankFile(coordinates))
+        newMove = Move(gameID = Game.objects.get(id=gameID), moveNumber = boardState['turnNumber'], pieceID = piece['id'], rankFile = coordToRankFile(position))
         newMove.save()
+
         return True
     else:
         return False
@@ -84,8 +108,28 @@ def generateBoardState(gameID):
     # gather every move from the db with the associated gameID attached
     # create a new board state based on the previous moves that have been made
     
-    boardState = createNewBoard()
+    boardState = createNewBoard(Game.objects.get(id=gameID))
+
+    moveList = Move.objects.filter(gameID = Game.objects.get(id=gameID)).order_by('moveNumber')
+    
+    # If the moveList is empty, go ahead and return the brand new board
+    if not moveList:
+        return boardState    
+
+
+    for move in moveList:
+        coords = rankFileToCoord(move.rankFile)
+        piece = boardState['pieces'][move.pieceID]
+        piece['rank'] = coords[0]
+        piece['file'] = coords[1]
+
+        for boardPiece in boardState['pieces']:
+            if boardPiece['rank'] == piece['rank'] and boardPiece['file'] == piece['file'] and boardPiece != piece:
+                boardPiece['captured'] = True
+
+
     return boardState
+
 
 # accepts a tuple (x,y), returns a string 'RF'
 def coordToRankFile(coordinates):
@@ -128,6 +172,7 @@ def coordToRankFile(coordinates):
             rankFile += '1'
 
     return rankFile
+
 
 # accepts a string 'RF', returns a tuple (x,y)
 def rankFileToCoord(rankFile):

@@ -69,12 +69,19 @@ def play(request):
 
 
 def localGame(request):
-    # create a new game entry in the DB
-    # local games will use the same player name for both player 1 and player 2, with no room code
-    newGame = Game(player1=request.user, player2=request.user, isActive=True)
-    newGame.save()
 
-    return render(request, 'pychess/localGame.html', {'gameID':newGame.id})
+    if request.method == 'GET':
+        room = request.GET.get('room')
+        if room == None:
+            # create a new game entry in the DB
+            # local games will use the same player name for both player 1 and player 2
+
+            newGame = Game(roomCode = generateNewRoomCode(), player1=request.user, player2=request.user, isActive=True)
+            newGame.save()
+            return render(request, 'pychess/localGame.html', {'gameID':newGame.id})
+        else:
+            game = Game.objects.get(roomCode = room)
+            return render(request, 'pychess/localGame.html', {'gameID':game.id})
 
 
 def networkGame(request):
@@ -82,13 +89,7 @@ def networkGame(request):
         if request.GET['g'] == 'new':
             # Create and render a new game, along with a message to the user containing their room code to share with their friend
 
-            # Generate a room code (random string of characters and numbers, 6 characters long). If a game already exists with that code, generate a new one. Once a unique code is found, break out of the loop.
-            while True:
-                roomCode = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-                try:
-                    Game.objects.get(roomCode=roomCode)
-                except:
-                    break
+            roomCode = generateNewRoomCode()
 
             newGame = Game(roomCode=roomCode, player1=request.user, isActive=True)
             newGame.save()
@@ -114,10 +115,21 @@ def spectate(request):
     return render(request, 'pychess/spectate.html')
 
 
+
+
+
 # API =====================
 
 def getGameState(request):
-    return JsonResponse(chessEngine.createNewBoard())
+    if request.method =='GET':
+        try:
+            gameID = request.GET.get('gameID')
+        except:
+            return JsonResponse({'error':'game does not exist'})
+        
+        return JsonResponse(chessEngine.generateBoardState(gameID))
+    else:
+        return JsonResponse({'error':'invalid request method'}, status=405)
 
 
 # takes some info about a piece on the board and returns a list of all of its valid moves
@@ -127,12 +139,11 @@ def checkMoves(request):
 
         # get some information about the piece to move from the POST request data
         data = json.loads(request.body)
-        pieceID = data.get('id')
-        pieceInfo = data.get('info')
-        gameID = data.get('game')
+        gameState = data.get('state')
+        pieceID = data.get('pieceID')
 
         # call the chessEngine to generate a list of valid moves for the given piece
-        moveList = chessEngine.checkMoves(gameID, pieceID, pieceInfo)
+        moveList = chessEngine.checkPieceMoves(gameState, pieceID)
 
         # return the list of moves to the front end
         return JsonResponse(moveList)
@@ -147,11 +158,11 @@ def submitMove(request):
         
         # get the info about the requested move from the POST request data
         data = json.loads(request.body)
-        pieceID = data.get('id')
-        position = data.get('pos')
+        piece = data.get('piece')
+        position = (data.get('rank'), data.get('file'))
         gameID = data.get('game')
 
-        if(chessEngine.move(gameID, pieceID, position)):
+        if(chessEngine.move(gameID, piece, position)):
             return JsonResponse({'message':'success'})
         else:
             return JsonResponse({'message':'failure'})
@@ -159,3 +170,20 @@ def submitMove(request):
         
     else:
         return JsonResponse({'error':'invalid request method'}, status=405)
+
+
+# Generates a room code; string of 6 random numbers & capital letters. Used for players to join network games, and for some game identification purposes.
+def generateNewRoomCode():
+    
+    # Start a loop, create a code, and check if a game already exists with that code
+    while True:
+        roomCode = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        try:
+            Game.objects.get(roomCode=roomCode)
+
+        # objects.get should throw an exception if it can't find a db entry; so if an exception is thrown, the new code is good, and the loop should break
+        # if no exception is thrown, that means objects.get found an entry, so go back to step 1 and try again
+        except:
+            break
+
+    return roomCode

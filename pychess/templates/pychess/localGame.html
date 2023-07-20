@@ -18,11 +18,12 @@ Play Chess!
 
 
     <script>
-        var checkingMove = false;
         var gameState = {};
+        var checkingMove = false;
         var activePiece = null;
         const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         var gameID = '{{ gameID }}'
+
 
         let statePromise = getGameState();
         statePromise.then((state) => {
@@ -34,7 +35,7 @@ Play Chess!
         //returns a promise that will contain a JSON object with the current game state once fulfilled
         async function getGameState()
         {
-            const response = await fetch("{% url 'gameState' %}");
+            const response = await fetch(`/gameState?gameID=${gameID}`);
             const state = await response.json();
             return state;
         }
@@ -83,96 +84,53 @@ Play Chess!
         }
 
         //reads each piece position from the gameState, and adds <img> tags with click handlers to represent each piece to the board
-        function drawPieces(gameState)
+        function drawPieces()
         {
             //grab an array of the keys from the gameState object to iterate through
-            pieces = Object.keys(gameState);
+            pieces = gameState['pieces']
 
-            //index 0 is "turnNumber", so start from index 1
-            for(let i = 1; i < pieces.length; i++)
+            for(let i = 0; i < pieces.length; i++)
             {
                 //only draw a piece if it has not been captured
-                if(!gameState[pieces[i]]['captured'])
+                if(!pieces[i]['captured'])
                 {
                     //create an image tag for each piece
-                    const pieceCode = pieces[i][0] + pieces[i][1];
-                    const image = getImage(pieceCode);
+                    //const image = getImage(pieceCode);
+                    const image = document.createElement("img");
+                    image.src=`/static/pychess/images/${pieces[i]['type']}_${pieces[i]['color']}.png`
                     
-                    //when the piece is clicked, call clickPiece() and pass in all the information we have about the piece in question
-                    image.addEventListener('click', (event) => clickPiece(event, pieces[i], gameState[pieces[i]]))
+                    //when the piece is clicked, call clickPiece() and pass in i as the id number
+                    image.addEventListener('click', () => clickPiece(i));
 
                     //find the correct space to place it, and append the image file
-                    document.querySelector(`#p${gameState[pieces[i]]['rank']}_${gameState[pieces[i]]['file']}`).append(image);
+                    document.querySelector(`#p${pieces[i]['rank']}_${pieces[i]['file']}`).append(image);
                 }
             }
         }
 
-        //long switch statement to pick out the correct image for a piece based on its ID
-        function getImage(pieceCode)
-        {
-            image = document.createElement("img");
-
-            switch (pieceCode)
-                {
-                    case 'dp':
-                        image.src="{% static '/pychess/images/pawn_dark.png' %}";
-                        break;
-                    case 'lp':
-                        image.src="{% static '/pychess/images/pawn_light.png' %}";
-                        break;
-                    case 'dr':
-                        image.src="{% static '/pychess/images/rook_dark.png' %}";
-                        break;
-                    case 'lr':
-                        image.src="{% static '/pychess/images/rook_light.png' %}";
-                        break;
-                    case 'dn':
-                        image.src="{% static '/pychess/images/knight_dark.png' %}";
-                        break;
-                    case 'ln':
-                        image.src="{% static '/pychess/images/knight_light.png' %}";
-                        break;
-                    case 'db':
-                        image.src="{% static '/pychess/images/bishop_dark.png' %}";
-                        break;
-                    case 'lb':
-                        image.src="{% static '/pychess/images/bishop_light.png' %}";
-                        break;
-                    case 'dq':
-                        image.src="{% static '/pychess/images/queen_dark.png' %}";
-                        break;
-                    case 'lq':
-                        image.src="{% static '/pychess/images/queen_light.png' %}";
-                        break;
-                    case 'dk':
-                        image.src="{% static '/pychess/images/king_dark.png' %}";
-                        break;
-                    case 'lk':
-                        image.src="{% static '/pychess/images/king_light.png' %}";
-                        break;
-                    default:
-                        break;
-                }
-
-            return image;
-        }
-
         //click handler for an empty cell
-        function clickCell(event, position)
+        function clickCell(event, cellID)
         {
+            // cellID will be a string 'pX_Y' where X and Y are the cells coordinates. The 'p' is there because an HTML id has to start with a letter for some reason.
+            let posX = parseInt(cellID[1]);
+            let posY = parseInt(cellID[3]);
+
             if (checkingMove === true && activePiece != null)
             {
 
                 checkingMove = false;
 
-                //  fetch submitMove, passing the piece and position as POST parameters
+                // Fetch submitMove, passing the piece, position, and gameID as POST parameters
+                // Note that submitMove wants the gameID and NOT the gameState. The state will be recreated on the backend to ensure the move is valid; 
+                // in the event that the request is modified in some way. (To prevent cheating)
                 fetch("{% url 'submitMove' %}", {
                     method:'POST',
                     headers: {'X-CSRFToken':csrftoken},
                     mode: 'same-origin',
                     body: JSON.stringify({
-                        id:activePiece,
-                        pos:position,
+                        piece:activePiece,
+                        rank:posX,
+                        file:posY,
                         game:parseInt(gameID)
                     })
                 })
@@ -190,42 +148,38 @@ Play Chess!
         }
 
         //click handler for any of the pieces on the board
-        function clickPiece(event, pieceID, pieceInfo)
+        function clickPiece(pieceID)
         {
-            //pieceID will be the unique ID of the specific piece we're working with (eg 'lp1', 'db2', etc)
-            //pieceInfo is a JSON object containing that pieces current rank, file, and a boolean to represent whether it's been captured
-
+        
             //this line prevents the clickCell() handler from firing at the same time as clickPiece()
             event.stopPropagation();
 
             //when piece is clicked
             if (checkingMove === false)
             {
-                //this wacky statement looks at the turn number & the first character of the pieceID
-                //if the turn number is even, it's light to move, otherwise its dark to move
-                //first character of pieceID will be 'l' for light or 'd' for dark
-                if((gameState['turnNumber'] % 2 === 0 && pieceID[0] === 'l') || (gameState['turnNumber'] % 2 === 1 && pieceID[0] === 'd'))
+                // grab the specific piece from the gameState so there aren't so many brackets in the next if statement
+                let piece = gameState['pieces'][pieceID];
+
+                if((gameState['turnNumber'] % 2 === 0 && piece['color'] === 'light') || (gameState['turnNumber'] % 2 === 1 && piece['color'] === 'dark'))
                 {
                     checkingMove = true
-                    activePiece = pieceID;
-                    checkMoves(pieceID, pieceInfo);
+                    activePiece = piece;
+                    checkMoves(piece['id']);
                 }
             }
 
         }
 
         //makes a call to the backend to get a list of valid coordinates a piece can move to, and then colors those squares green
-        function checkMoves(pieceID, pieceInfo)
+        function checkMoves(pieceID)
         {
-            
             fetch("{% url 'checkMoves' %}", {
                 method:'POST',
                 headers: {'X-CSRFToken':csrftoken},
                 mode: 'same-origin',
                 body: JSON.stringify({
-                    id:pieceID,
-                    info:pieceInfo,
-                    game:parseInt(gameID)
+                    state:gameState,
+                    pieceID:pieceID
                 })
             })
             .then(response => response.json())

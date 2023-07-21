@@ -78,18 +78,38 @@ def checkPieceMoves(gameState, pieceID):
     piece = gameState['pieces'][pieceID]
     validMoves = []
 
-    # TODO: should generate accurate absolute board coordinates
+    # Grabs a list of directions the given piece is allowed to move
     for direction in getMovementPattern(piece):
+
+        # Step in that direction one space at a time, up to the max number of spaces a piece is allowed to move on one turn
         for i in range(getMovementDistance(piece)):
+            # Start by getting the absolute board coordinate of the space we're checking
             posX = piece['rank'] + direction[0] * (i + 1)
             posY = piece['file'] + direction[1] * (i + 1)
-            # do the checking here to make sure the move is actually valid before appending it
+
+            # Make sure the space is within the bounds of the board. If it's not, break out of the loop and move on to the next direction
             if posX > 7 or posX < 0 or posY > 7 or posY < 0:
                 break
 
+            # If the piece is a pawn or a king that has special moves; check whether those special moves are allowed here:
+
+            
+            # Make sure the piece isn't moving into a space occupied by another piece
+            for boardPiece in gameState['pieces']:
+                if posX == boardPiece['rank'] and posY == boardPiece['file'] and piece != boardPiece:
+                   
+                    # If it is, and the piece is the same color as the piece occupying the square to move to,
+                    # don't add the move and break out of the loop to check a new direction (can't move through same colored pieces)
+                    if boardPiece['color'] == piece['color']:
+                        print(f"Same color piece at {posX}, {posY}")
+                    
+                    # Otherwise, add the move first and then break out of loop to check a new direction
+                    else:
+                        print(f"Opposite color piece at {posX}, {posY}")
+
+
             validMoves.append((posX,posY))
 
-    print(piece['type'])
     return {'validMoves':validMoves}
     
 
@@ -109,7 +129,6 @@ def move(gameID, piece, position):
         # update the 'move' db with the pieces new position
         newMove = Move(gameID = Game.objects.get(id=gameID), moveNumber = boardState['turnNumber'], pieceID = piece['id'], rankFile = coordToRankFile(position))
         newMove.save()
-        piece['hasMoved'] = True
 
         return True
     else:
@@ -136,6 +155,8 @@ def generateBoardState(gameID):
         piece = boardState['pieces'][move.pieceID]
         piece['rank'] = coords[0]
         piece['file'] = coords[1]
+        piece['hasMoved'] = True
+        boardState['turnNumber'] += 1
 
         for boardPiece in boardState['pieces']:
             if boardPiece['rank'] == piece['rank'] and boardPiece['file'] == piece['file'] and boardPiece != piece:
@@ -232,7 +253,7 @@ def rankFileToCoord(rankFile):
     return (xPos, yPos)
 
 
-
+# returns a list of tuples, each describing which directions a piece is allowed to move
 def getMovementPattern(piece):
     if piece['type'] == 'pawn':
         # Pawns are going to be weird because they're the only piece in the game that captures differently than they normally move
@@ -264,6 +285,7 @@ def getMovementPattern(piece):
             return [(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1),(2,0),(-2,0)]
 
 
+# returns an integer, which represents the number of spaces a piece is allowed to move per turn
 def getMovementDistance(piece):
     if piece['type'] == 'bishop' or piece['type'] == 'rook' or piece['type'] == 'queen':
         return 8

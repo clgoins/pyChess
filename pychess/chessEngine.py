@@ -62,6 +62,7 @@ def createNewBoard(game):
             piece['file'] = 7
 
         piece['captured'] = False
+        piece['hasMoved'] = False
 
         pieceList.append(piece)
 
@@ -75,12 +76,24 @@ def createNewBoard(game):
 def checkPieceMoves(gameState, pieceID):
 
     piece = gameState['pieces'][pieceID]
+    validMoves = []
 
     # TODO: should generate accurate absolute board coordinates
-    if piece['type'] == 'pawn':
-        return {'validMoves': [(4,4)]}
-    else:
-        return {'validMoves':[]}
+    for direction in getMovementPattern(piece):
+        for i in range(getMovementDistance(piece)):
+            posX = piece['rank'] + direction[0] * (i + 1)
+            posY = piece['file'] + direction[1] * (i + 1)
+            # do the checking here to make sure the move is actually valid before appending it
+            if posX > 7 or posX < 0 or posY > 7 or posY < 0:
+                break
+
+            validMoves.append((posX,posY))
+
+    print(piece['type'])
+    return {'validMoves':validMoves}
+    
+
+
 
 
 # attempts to move a piece on the board. returns True if successful or False otherwise
@@ -96,6 +109,7 @@ def move(gameID, piece, position):
         # update the 'move' db with the pieces new position
         newMove = Move(gameID = Game.objects.get(id=gameID), moveNumber = boardState['turnNumber'], pieceID = piece['id'], rankFile = coordToRankFile(position))
         newMove.save()
+        piece['hasMoved'] = True
 
         return True
     else:
@@ -217,3 +231,41 @@ def rankFileToCoord(rankFile):
 
     return (xPos, yPos)
 
+
+
+def getMovementPattern(piece):
+    if piece['type'] == 'pawn':
+        # Pawns are going to be weird because they're the only piece in the game that captures differently than they normally move
+        # They also move in different directions depending on which player owns them
+        # There's ALSO the issue of En Passant and promotions, which don't apply to any other piece
+        if piece['hasMoved']:
+            if piece['color'] == 'light':
+                return [(0,-1),(-1,-1),(1,-1)]
+            elif piece['color'] == 'dark':
+                return [(0,1),(-1,1),(1,1)]
+        else:
+            if piece['color'] == 'light':
+                return [(0,-1),(-1,-1),(1,-1),(0,-2)]
+            elif piece['color'] == 'dark':
+                return [(0,1),(-1,1),(1,1),(0,2)]
+            
+    elif piece['type'] == 'rook':
+        return [(0,1),(1,0),(0,-1),(-1,0)]
+    elif piece['type'] == 'bishop':
+        return [(1,1),(1,-1),(-1,1),(-1,-1)]
+    elif piece['type'] == 'knight':
+        return [(1,2),(2,1),(1,-2),(2,-1),(-1,-2),(-2,-1),(-1,2),(-2,1)]
+    elif piece['type'] == 'queen':
+        return [(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1)]
+    elif piece['type'] == 'king':
+        if piece['hasMoved']:
+            return [(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1)]
+        else:
+            return [(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1),(2,0),(-2,0)]
+
+
+def getMovementDistance(piece):
+    if piece['type'] == 'bishop' or piece['type'] == 'rook' or piece['type'] == 'queen':
+        return 8
+    elif piece['type'] == 'knight' or piece['type'] == 'king' or piece['type'] == 'pawn':
+        return 1

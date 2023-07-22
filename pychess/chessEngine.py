@@ -86,13 +86,27 @@ def checkPieceMoves(gameState, pieceID):
             # Start by getting the absolute board coordinate of the space we're checking
             posX = piece['rank'] + direction[0] * (i + 1)
             posY = piece['file'] + direction[1] * (i + 1)
+            positionIsOccupied = False
+
+            piecePositionList = []
+            for boardPiece in gameState['pieces']:
+                piecePositionList.append((boardPiece['rank'], boardPiece['file']))
 
             # Make sure the space is within the bounds of the board. If it's not, break out of the loop and move on to the next direction
             if posX > 7 or posX < 0 or posY > 7 or posY < 0:
                 break
 
             # If the piece is a pawn or a king that has special moves; check whether those special moves are allowed here:
+            if piece['type'] == 'pawn':
+                # Regular pawn capturing
+                
 
+                # En Passant
+                pass
+
+            if piece['type'] == 'king':
+                # Castling
+                pass
             
             # Make sure the piece isn't moving into a space occupied by another piece
             for boardPiece in gameState['pieces']:
@@ -101,12 +115,15 @@ def checkPieceMoves(gameState, pieceID):
                     # If it is, and the piece is the same color as the piece occupying the square to move to,
                     # don't add the move and break out of the loop to check a new direction (can't move through same colored pieces)
                     if boardPiece['color'] == piece['color']:
-                        print(f"Same color piece at {posX}, {posY}")
+                        positionIsOccupied = True
                     
                     # Otherwise, add the move first and then break out of loop to check a new direction
                     else:
-                        print(f"Opposite color piece at {posX}, {posY}")
+                        positionIsOccupied = True
+                        validMoves.append((posX,posY))
 
+            if positionIsOccupied:
+                break
 
             validMoves.append((posX,posY))
 
@@ -259,16 +276,10 @@ def getMovementPattern(piece):
         # Pawns are going to be weird because they're the only piece in the game that captures differently than they normally move
         # They also move in different directions depending on which player owns them
         # There's ALSO the issue of En Passant and promotions, which don't apply to any other piece
-        if piece['hasMoved']:
-            if piece['color'] == 'light':
-                return [(0,-1),(-1,-1),(1,-1)]
-            elif piece['color'] == 'dark':
-                return [(0,1),(-1,1),(1,1)]
-        else:
-            if piece['color'] == 'light':
-                return [(0,-1),(-1,-1),(1,-1),(0,-2)]
-            elif piece['color'] == 'dark':
-                return [(0,1),(-1,1),(1,1),(0,2)]
+        if piece['color'] == 'light':
+            return [(0,-1)]
+        elif piece['color'] == 'dark':
+            return [(0,1)]
             
     elif piece['type'] == 'rook':
         return [(0,1),(1,0),(0,-1),(-1,0)]
@@ -276,18 +287,18 @@ def getMovementPattern(piece):
         return [(1,1),(1,-1),(-1,1),(-1,-1)]
     elif piece['type'] == 'knight':
         return [(1,2),(2,1),(1,-2),(2,-1),(-1,-2),(-2,-1),(-1,2),(-2,1)]
-    elif piece['type'] == 'queen':
+    elif piece['type'] == 'queen' or piece['type'] == 'king':
         return [(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1)]
-    elif piece['type'] == 'king':
-        if piece['hasMoved']:
-            return [(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1)]
-        else:
-            return [(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1),(2,0),(-2,0)]
 
 
 # returns an integer, which represents the number of spaces a piece is allowed to move per turn
 def getMovementDistance(piece):
     if piece['type'] == 'bishop' or piece['type'] == 'rook' or piece['type'] == 'queen':
         return 8
-    elif piece['type'] == 'knight' or piece['type'] == 'king' or piece['type'] == 'pawn':
+    elif piece['type'] == 'knight' or piece['type'] == 'king':
         return 1
+    elif piece['type'] == 'pawn':
+        if piece['hasMoved']:
+            return 1
+        else:
+            return 2

@@ -77,6 +77,35 @@ def checkPieceMoves(gameState, pieceID):
 
     piece = gameState['pieces'][pieceID]
     validMoves = []
+    piecePositionList = []
+    for boardPiece in gameState['pieces']:
+        piecePositionList.append((boardPiece['rank'], boardPiece['file']))
+
+    # If the piece is a pawn or a king that has special moves; check whether those special moves are allowed here:
+    if piece['type'] == 'pawn':
+        # Regular pawn capturing
+        # En Passant
+
+        checkLeft = piece['rank'] - 1
+        checkRight = piece['rank'] + 1
+        if piece['color'] == 'light':
+            checkVert = piece['file'] - 1
+        elif piece['color'] == 'dark':
+            checkVert = piece['file'] + 1
+
+        if (checkRight,checkVert) in piecePositionList:
+            validMoves.append((checkRight,checkVert))
+
+        if (checkLeft,checkVert) in piecePositionList:
+            validMoves.append((checkLeft,checkVert))
+        
+        #TODO: Need to make sure a pawn can't capture a piece of the same color. May require approaching this whole block differently
+
+        
+
+    if piece['type'] == 'king':
+        # Castling
+        pass
 
     # Grabs a list of directions the given piece is allowed to move
     for direction in getMovementPattern(piece):
@@ -88,25 +117,9 @@ def checkPieceMoves(gameState, pieceID):
             posY = piece['file'] + direction[1] * (i + 1)
             positionIsOccupied = False
 
-            piecePositionList = []
-            for boardPiece in gameState['pieces']:
-                piecePositionList.append((boardPiece['rank'], boardPiece['file']))
-
             # Make sure the space is within the bounds of the board. If it's not, break out of the loop and move on to the next direction
             if posX > 7 or posX < 0 or posY > 7 or posY < 0:
                 break
-
-            # If the piece is a pawn or a king that has special moves; check whether those special moves are allowed here:
-            if piece['type'] == 'pawn':
-                # Regular pawn capturing
-                
-
-                # En Passant
-                pass
-
-            if piece['type'] == 'king':
-                # Castling
-                pass
             
             # Make sure the piece isn't moving into a space occupied by another piece
             for boardPiece in gameState['pieces']:
@@ -114,7 +127,7 @@ def checkPieceMoves(gameState, pieceID):
                    
                     # If it is, and the piece is the same color as the piece occupying the square to move to,
                     # don't add the move and break out of the loop to check a new direction (can't move through same colored pieces)
-                    if boardPiece['color'] == piece['color']:
+                    if boardPiece['color'] == piece['color'] or piece['type'] == 'pawn':
                         positionIsOccupied = True
                     
                     # Otherwise, add the move first and then break out of loop to check a new direction

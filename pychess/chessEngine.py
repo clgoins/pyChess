@@ -77,29 +77,36 @@ def checkPieceMoves(gameState, pieceID):
 
     piece = gameState['pieces'][pieceID]
     validMoves = []
+
+    # This creates a list of tuples with the coordinates of every occupied space, and only the occupied spaces. 
+    # We care about what color piece occupies the space, but not about any other information about the piece.
     piecePositionList = []
     for boardPiece in gameState['pieces']:
-        piecePositionList.append((boardPiece['rank'], boardPiece['file']))
+        if not boardPiece['captured']:
+            piecePositionList.append((boardPiece['rank'], boardPiece['file'], boardPiece['color']))
 
     # If the piece is a pawn or a king that has special moves; check whether those special moves are allowed here:
     if piece['type'] == 'pawn':
+        
         # Regular pawn capturing
-        # En Passant
-
         checkLeft = piece['rank'] - 1
         checkRight = piece['rank'] + 1
         if piece['color'] == 'light':
+            opposingColor = 'dark'
             checkVert = piece['file'] - 1
         elif piece['color'] == 'dark':
+            opposingColor = 'light'
             checkVert = piece['file'] + 1
 
-        if (checkRight,checkVert) in piecePositionList:
+        if (checkRight,checkVert, opposingColor) in piecePositionList:
             validMoves.append((checkRight,checkVert))
 
-        if (checkLeft,checkVert) in piecePositionList:
+        if (checkLeft,checkVert, opposingColor) in piecePositionList:
             validMoves.append((checkLeft,checkVert))
+
+        # En Passant
+        # Promotions
         
-        #TODO: Need to make sure a pawn can't capture a piece of the same color. May require approaching this whole block differently
 
         
 
@@ -123,22 +130,26 @@ def checkPieceMoves(gameState, pieceID):
             
             # Make sure the piece isn't moving into a space occupied by another piece
             for boardPiece in gameState['pieces']:
-                if posX == boardPiece['rank'] and posY == boardPiece['file'] and piece != boardPiece:
-                   
-                    # If it is, and the piece is the same color as the piece occupying the square to move to,
-                    # don't add the move and break out of the loop to check a new direction (can't move through same colored pieces)
-                    if boardPiece['color'] == piece['color'] or piece['type'] == 'pawn':
-                        positionIsOccupied = True
+                if not boardPiece['captured']:
+                    if posX == boardPiece['rank'] and posY == boardPiece['file'] and piece != boardPiece:
                     
-                    # Otherwise, add the move first and then break out of loop to check a new direction
-                    else:
-                        positionIsOccupied = True
-                        validMoves.append((posX,posY))
+                        # If it is, and the piece is the same color as the piece occupying the square to move to,
+                        # don't add the move and break out of the loop to check a new direction (can't move through same colored pieces)
+                        if boardPiece['color'] == piece['color'] or piece['type'] == 'pawn':
+                            positionIsOccupied = True
+                        
+                        # Otherwise, add the move first and then break out of loop to check a new direction
+                        else:
+                            positionIsOccupied = True
+                            validMoves.append((posX,posY))
 
             if positionIsOccupied:
                 break
 
             validMoves.append((posX,posY))
+
+    print(gameState)
+    print(validMoves)
 
     return {'validMoves':validMoves}
     

@@ -73,7 +73,7 @@ def createNewBoard(game):
 
 
 # creates list of every valid space a given piece can move to
-def checkPieceMoves(gameState, pieceID):
+def checkPieceMoves(gameState, pieceID, simulateMoves):
 
     piece = gameState['pieces'][pieceID]
     validMoves = []
@@ -99,20 +99,35 @@ def checkPieceMoves(gameState, pieceID):
             checkVert = piece['file'] + 1
 
         if (checkRight,checkVert, opposingColor) in piecePositionList:
-            validMoves.append((checkRight,checkVert))
+            if simulateMoves:
+                simulatedMove = Move(gameID = Game.objects.get(id=gameState['id']), moveNumber = 0, pieceID = piece['id'], rankFile = coordToRankFile((checkRight,checkVert)))
+                virtualGameState = simulateMove(gameState,simulatedMove)
+                if not isInCheck(virtualGameState, piece['color']):
+                    validMoves.append((checkRight,checkVert))
+            else:
+                validMoves.append((checkRight,checkVert))
 
         if (checkLeft,checkVert, opposingColor) in piecePositionList:
-            validMoves.append((checkLeft,checkVert))
+            if simulateMoves:
+                simulatedMove = Move(gameID = Game.objects.get(id=gameState['id']), moveNumber = 0, pieceID = piece['id'], rankFile = coordToRankFile((checkLeft,checkVert)))
+                virtualGameState = simulateMove(gameState,simulatedMove)
+                if not isInCheck(virtualGameState, piece['color']):
+                    validMoves.append((checkLeft,checkVert))
+            else:
+                validMoves.append((checkLeft,checkVert))
 
         # En Passant
         # Promotions
         
 
-        
-
     if piece['type'] == 'king':
         # Castling
-        pass
+        if not piece['hasMoved']:
+            if piece['color'] == 'light':
+                pass
+            elif piece['color'] == 'dark':
+                pass
+
 
     # Grabs a list of directions the given piece is allowed to move
     for direction in getMovementPattern(piece):
@@ -141,29 +156,48 @@ def checkPieceMoves(gameState, pieceID):
                         # Otherwise, add the move first and then break out of loop to check a new direction
                         else:
                             positionIsOccupied = True
-                            validMoves.append((posX,posY))
+                            if simulateMoves:
+                                simulatedMove = Move(gameID = Game.objects.get(id=gameState['id']), moveNumber = 0, pieceID = piece['id'], rankFile = coordToRankFile((posX,posY)))
+                                virtualGameState = simulateMove(gameState,simulatedMove)
+                                if not isInCheck(virtualGameState, piece['color']):
+                                    validMoves.append((posX,posY))
+                            else:
+                                validMoves.append((posX,posY))
 
             if positionIsOccupied:
                 break
 
-            validMoves.append((posX,posY))
-
-    print(gameState)
-    print(validMoves)
+            if simulateMoves:
+                simulatedMove = Move(gameID = Game.objects.get(id=gameState['id']), moveNumber = 0, pieceID = piece['id'], rankFile = coordToRankFile((posX,posY)))
+                virtualGameState = simulateMove(gameState,simulatedMove)
+                if not isInCheck(virtualGameState, piece['color']):
+                    validMoves.append((posX,posY))
+            else:
+                validMoves.append((posX,posY))
 
     return {'validMoves':validMoves}
-    
 
 
+# Creates a list of every possible space any piece of a specific color can move to. Used for identifying check & checkmate
+def checkBoardMoves(gameState, color):
+
+    possibleMoves = []
+
+    for piece in gameState['pieces']:
+        if piece['color'] == color:
+            possibleMoves.append(checkPieceMoves(gameState, piece['id'], False))
+
+    return possibleMoves
 
 
 # attempts to move a piece on the board. returns True if successful or False otherwise
 def move(gameID, piece, position):
 
+    # Current state of the board
     boardState = generateBoardState(gameID)
 
     # double check that the provided move is valid (should be in the list returned by checkMoves())
-    validMoves = checkPieceMoves(boardState, piece['id'])
+    validMoves = checkPieceMoves(boardState, piece['id'], False)
 
     if position in validMoves['validMoves']:
 
@@ -171,6 +205,42 @@ def move(gameID, piece, position):
         newMove = Move(gameID = Game.objects.get(id=gameID), moveNumber = boardState['turnNumber'], pieceID = piece['id'], rankFile = coordToRankFile(position))
         newMove.save()
 
+        return True
+    else:
+        return False
+
+
+# simulates a single move without committing it to the DB, and returns the simulated board state
+def simulateMove(gameState, move):
+    virtualGameState = gameState
+    coords = rankFileToCoord(move.rankFile)
+    piece = virtualGameState['pieces'][move.pieceID]
+    piece['rank'] = coords[0]
+    piece['file'] = coords[1]
+    piece['hasMoved'] = True
+    virtualGameState['turnNumber'] += 1
+
+    for boardPiece in virtualGameState['pieces']:
+        if boardPiece['rank'] == piece['rank'] and boardPiece['file'] == piece['file'] and boardPiece != piece:
+            boardPiece['captured'] = True
+
+    return virtualGameState
+
+
+# Analyzes the entire board. If the player color provided is in check, return True, else return False
+def isInCheck(gameState, color):
+    if color == 'light':
+        king = gameState['pieces'][28]
+        opposingColor = 'dark'
+    elif color == 'dark':
+        king = gameState['pieces'][4]
+        opposingColor = 'light'
+    
+    kingPos = (king['rank'], king['file'])
+
+    possibleMoves = checkBoardMoves(gameState, opposingColor)
+
+    if kingPos in possibleMoves:
         return True
     else:
         return False
@@ -297,9 +367,6 @@ def rankFileToCoord(rankFile):
 # returns a list of tuples, each describing which directions a piece is allowed to move
 def getMovementPattern(piece):
     if piece['type'] == 'pawn':
-        # Pawns are going to be weird because they're the only piece in the game that captures differently than they normally move
-        # They also move in different directions depending on which player owns them
-        # There's ALSO the issue of En Passant and promotions, which don't apply to any other piece
         if piece['color'] == 'light':
             return [(0,-1)]
         elif piece['color'] == 'dark':

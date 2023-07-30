@@ -143,7 +143,7 @@ def checkMoves(request):
         pieceID = data.get('pieceID')
 
         # call the chessEngine to generate a list of valid moves for the given piece
-        moveList = chessEngine.checkPieceMoves(gameState, pieceID)
+        moveList = chessEngine.checkPieceMoves(gameState, pieceID, False)
 
         # return the list of moves to the front end
         return JsonResponse(moveList)

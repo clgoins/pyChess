@@ -1,5 +1,5 @@
 from .models import *
-import random
+import json
 
 
 def createNewBoard(game):
@@ -73,7 +73,7 @@ def createNewBoard(game):
 
 
 # creates list of every valid space a given piece can move to
-def checkPieceMoves(gameState, pieceID, simulateMoves):
+def checkPieceMoves(gameState, pieceID):
 
     piece = gameState['pieces'][pieceID]
     validMoves = []
@@ -99,20 +99,10 @@ def checkPieceMoves(gameState, pieceID, simulateMoves):
             checkVert = piece['file'] + 1
 
         if (checkRight,checkVert, opposingColor) in piecePositionList:
-            if simulateMoves:
-                virtualGameState = simulateMove(gameState, piece, (checkRight,checkVert))
-                if not isInCheck(virtualGameState, piece['color']):
-                    validMoves.append((checkRight,checkVert))
-            else:
-                validMoves.append((checkRight,checkVert))
+            validMoves.append((checkRight,checkVert))
 
         if (checkLeft,checkVert, opposingColor) in piecePositionList:
-            if simulateMoves:
-                virtualGameState = simulateMove(gameState, piece ,(checkLeft,checkVert))
-                if not isInCheck(virtualGameState, piece['color']):
-                    validMoves.append((checkLeft,checkVert))
-            else:
-                validMoves.append((checkLeft,checkVert))
+            validMoves.append((checkLeft,checkVert))
 
         # En Passant
         # Promotions
@@ -135,13 +125,13 @@ def checkPieceMoves(gameState, pieceID, simulateMoves):
             # Start by getting the absolute board coordinate of the space we're checking
             posX = piece['rank'] + direction[0] * (i + 1)
             posY = piece['file'] + direction[1] * (i + 1)
-            positionIsOccupied = False
-
+            
             # Make sure the space is within the bounds of the board. If it's not, break out of the loop and move on to the next direction
             if posX > 7 or posX < 0 or posY > 7 or posY < 0:
                 break
             
             # Make sure the piece isn't moving into a space occupied by another piece
+            positionIsOccupied = False
             for boardPiece in gameState['pieces']:
                 if not boardPiece['captured']:
                     if posX == boardPiece['rank'] and posY == boardPiece['file'] and piece != boardPiece:
@@ -154,46 +144,174 @@ def checkPieceMoves(gameState, pieceID, simulateMoves):
                         # Otherwise, add the move first and then break out of loop to check a new direction
                         else:
                             positionIsOccupied = True
-                            if simulateMoves:
-                                virtualGameState = simulateMove(gameState,piece,(posX,posY))
-                                if not isInCheck(virtualGameState, piece['color']):
-                                    validMoves.append((posX,posY))
-                            else:
+                            # Simulate the move before allowing it to happen. If the player moves themselves into check, the move is not allowed
+                            virtualGameState = simulateMove(gameState, piece['id'], (posX,posY))
+                            if not isInCheck(virtualGameState, piece['color']):
                                 validMoves.append((posX,posY))
 
             if positionIsOccupied:
                 break
 
-            if simulateMoves:
-                virtualGameState = simulateMove(gameState, piece, (posX,posY))
-                if not isInCheck(virtualGameState, piece['color']):
-                    validMoves.append((posX,posY))
-            else:
+            virtualGameState = simulateMove(gameState, piece['id'], (posX,posY))
+            if not isInCheck(virtualGameState, piece['color']):
                 validMoves.append((posX,posY))
 
     return {'validMoves':validMoves}
 
 
-# Creates a list of every possible space any piece of a specific color can move to. Used for identifying check & checkmate
-def checkBoardMoves(gameState, color):
+# moves a piece and creates a copy of the board state; without committing the move to the DB or altering the main gameState.
+# Used for verifying that a player cannot move themselves into check, per Chess rules
+def simulateMove(gameState, pieceID, position):
+    
+    # Creates a deep copy of the gameState object; so as not to modify any of the values in the gameState while working
+    virtualGameState = json.loads(json.dumps(gameState))
+    vPiece = virtualGameState['pieces'][pieceID]
 
-    possibleMoves = []
+    vPiece['rank'] = position[0]
+    vPiece['file'] = position[1]
+    vPiece['hasMoved'] = True
+    virtualGameState['turnNumber'] += 1
 
-    for piece in gameState['pieces']:
-        if piece['color'] == color:
-            possibleMoves = possibleMoves + checkPieceMoves(gameState, piece['id'], False)['validMoves']
+    for boardPiece in virtualGameState['pieces']:
+            if boardPiece['rank'] == vPiece['rank'] and boardPiece['file'] == vPiece['file'] and boardPiece != vPiece:
+                boardPiece['captured'] = True
 
-    return possibleMoves
+    return virtualGameState
 
 
-# attempts to move a piece on the board. returns True if successful or False otherwise
+# Checks if a player is in check. Returns True if so, or False otherwise.
+def isInCheck(gameState, color):
+
+    print("Begin Check:")
+
+    if color == 'light':
+        king = gameState['pieces'][28]
+    elif color == 'dark':
+        king = gameState['pieces'][4]
+
+    boardPieces = gameState['pieces']
+
+    cardinalDirections = [(1,0),(-1,0),(0,1),(0,-1)]
+    ordinalDirections = [(1,1),(1,-1),(-1,1),(-1,-1)]
+    knightSpaces = [(1,2),(-1,2),(1,-2),(-1,-2),(2,1),(2,-1),(-2,1),(-2,-1)]
+
+
+    # Check north, south, east, and west until we hit a piece. If the piece is a rook or a queen, return True. 
+    # If the piece is a King, and it's only one space away, return True.
+    print("Checking cardinal directions:")
+    for direction in cardinalDirections:
+        pieceFound = False
+        for distance in range(8):
+            checkX = king['rank'] + (direction[0] * (distance + 1))
+            checkY = king['file'] + (direction[1] * (distance + 1))
+            print(f"Checking space ({checkX,checkY})")
+            # If the check space is out of bounds, break and start searching in a new direction
+            if checkX < 0 or checkX > 7 or checkY < 0 or checkY > 7:
+                break
+
+            # Begin checking the positions of the pieces on the board against the new checkX and checkY
+            for piece in boardPieces:
+                
+                # If a piece is found, check its type and distance.
+                if piece['captured'] == False and piece['rank'] == checkX and piece['file'] == checkY:
+                    pieceFound = True
+                    print(f"Piece found: {piece['color']} {piece['type']} at ({piece['rank']}, {piece['file']})")
+                    if piece['color'] != king['color'] and (piece['type'] == 'rook' or piece['type'] == 'queen'):
+                        print("King in check")
+                        return True
+                    elif piece['type'] == 'king' and distance == 1 and piece['color'] != king['color']:
+                        print("King in check")
+                        return True
+                
+                # If a piece is found that doesn't place the king in check, break out of both inner loops and search in a new direction
+                if pieceFound:
+                    print("No check found; changing directions")
+                    break
+
+            if pieceFound:
+                    break    
+
+
+    # Check diagonally in all four directions until a piece is hit. If the piece is a bishop or queen, return True
+    # If the piece is a Pawn or a King, and it's only one space away, return True.
+    # Pawns are weird because they can only capture NE/NW or SE/SW depending on their color
+    print("Checking ordinal directions:")
+    for direction in ordinalDirections:
+        pieceFound = False
+        for distance in range(8):
+            checkX = king['rank'] + (direction[0] * (distance + 1))
+            checkY = king['file'] + (direction[1] * (distance + 1))
+            print(f"Checking space ({checkX,checkY})")
+
+            # If the check space is out of bounds, break and start searching in a new direction
+            if checkX < 0 or checkX > 7 or checkY < 0 or checkY > 7:
+                break
+
+            # Begin checking the positions of the pieces on the board against the new checkX and checkY
+            for piece in boardPieces:
+                
+                # If a piece is found, check its type and distance.
+                if piece['captured'] == False and piece['rank'] == checkX and piece['file'] == checkY:
+                    pieceFound = True
+                    print(f"Piece found: {piece['color']} {piece['type']} at ({piece['rank']}, {piece['file']})")
+                    if piece['color'] != king['color'] and (piece['type'] == 'bishop' or piece['type'] == 'queen'):
+                        print("King in check")
+                        return True
+                    elif piece['type'] == 'king' and distance == 1 and piece['color'] != king['color']:
+                        print("King in check")
+                        return True
+                    # Pawns are weird again; if there's a pawn diagonally one space away from the king, need to check what color it is and if it's north or south of the king
+                    elif piece['type'] == 'pawn' and distance == 1 and piece['color'] != king['color']:
+                        if piece['color'] == 'light' and piece['file'] == king['file'] + 1:
+                            print("King in check")
+                            return True
+                        elif piece['color'] == 'dark' and piece['file'] == king['file'] - 1:
+                            print("King in check")
+                            return True
+                
+                # If a piece is found that doesn't place the king in check, break out of both inner loops and search in a new direction
+                if pieceFound:
+                    print("No check found; changing directions")
+                    break
+
+            if pieceFound:
+                    break
+
+
+    # Check the surrounding spaces for a knight. If a knight is found, return True.
+    print("Checking for Knights:")
+    for direction in knightSpaces:
+        checkX = king['rank'] + direction[0]
+        checkY = king['file'] + direction[1]
+        print(f"Checking space ({checkX,checkY})")
+
+        # If the space to check is out of bounds, skip it and check a different space
+        if checkX > 7 or checkX < 0 or checkY > 7 or checkY < 0:
+            continue
+
+        for piece in boardPieces:
+            if piece['captured'] == False and piece['rank'] == checkX and piece['file'] == checkY:
+                print(f"Piece found: {piece['color']} {piece['type']} at ({piece['rank']}, {piece['file']})")
+                if piece['type'] == 'knight' and piece['color'] != king['color']:
+                    print("King in check")
+                    return True
+                print("No check found; changing directions")
+                break
+
+
+    # If all of the checks above fail, return false
+    print("No check found")
+    return False
+
+
+# Attempts to move a piece on the board. returns True if successful or False otherwise
 def move(gameID, piece, position):
 
     # Current state of the board
     boardState = generateBoardState(gameID)
 
     # double check that the provided move is valid (should be in the list returned by checkMoves())
-    validMoves = checkPieceMoves(boardState, piece['id'], True)
+    validMoves = checkPieceMoves(boardState, piece['id'])
 
     if position in validMoves['validMoves']:
 
@@ -201,39 +319,6 @@ def move(gameID, piece, position):
         newMove = Move(gameID = Game.objects.get(id=gameID), moveNumber = boardState['turnNumber'], pieceID = piece['id'], rankFile = coordToRankFile(position))
         newMove.save()
 
-        return True
-    else:
-        return False
-
-
-# simulates a single move without committing it to the DB or modifying the original board state, and returns the simulated board state
-def simulateMove(gameState, piece, position):
-    virtualGameState = gameState.copy()
-    vpiece = piece.copy()
-    vpiece['rank'] = position[0]
-    vpiece['file'] = position[1]
-    vpiece['hasMoved'] = True
-
-    for boardPiece in virtualGameState['pieces']:
-        if boardPiece['rank'] == vpiece['rank'] and boardPiece['file'] == vpiece['file'] and boardPiece != vpiece:
-            boardPiece['captured'] = True
-
-    return virtualGameState
-
-
-# Analyzes the entire board. If the player color provided is in check, return True, else return False
-def isInCheck(gameState, color):
-    if color == 'light':
-        king = gameState['pieces'][28]
-        opposingColor = 'dark'
-    elif color == 'dark':
-        king = gameState['pieces'][4]
-        opposingColor = 'light'
-    
-    kingPos = (king['rank'], king['file'])
-    possibleMoves = checkBoardMoves(gameState, opposingColor)
-
-    if kingPos in possibleMoves:
         return True
     else:
         return False

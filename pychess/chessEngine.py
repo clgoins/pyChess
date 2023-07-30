@@ -100,8 +100,7 @@ def checkPieceMoves(gameState, pieceID, simulateMoves):
 
         if (checkRight,checkVert, opposingColor) in piecePositionList:
             if simulateMoves:
-                simulatedMove = Move(gameID = Game.objects.get(id=gameState['id']), moveNumber = 0, pieceID = piece['id'], rankFile = coordToRankFile((checkRight,checkVert)))
-                virtualGameState = simulateMove(gameState,simulatedMove)
+                virtualGameState = simulateMove(gameState, piece, (checkRight,checkVert))
                 if not isInCheck(virtualGameState, piece['color']):
                     validMoves.append((checkRight,checkVert))
             else:
@@ -109,8 +108,7 @@ def checkPieceMoves(gameState, pieceID, simulateMoves):
 
         if (checkLeft,checkVert, opposingColor) in piecePositionList:
             if simulateMoves:
-                simulatedMove = Move(gameID = Game.objects.get(id=gameState['id']), moveNumber = 0, pieceID = piece['id'], rankFile = coordToRankFile((checkLeft,checkVert)))
-                virtualGameState = simulateMove(gameState,simulatedMove)
+                virtualGameState = simulateMove(gameState, piece ,(checkLeft,checkVert))
                 if not isInCheck(virtualGameState, piece['color']):
                     validMoves.append((checkLeft,checkVert))
             else:
@@ -157,8 +155,7 @@ def checkPieceMoves(gameState, pieceID, simulateMoves):
                         else:
                             positionIsOccupied = True
                             if simulateMoves:
-                                simulatedMove = Move(gameID = Game.objects.get(id=gameState['id']), moveNumber = 0, pieceID = piece['id'], rankFile = coordToRankFile((posX,posY)))
-                                virtualGameState = simulateMove(gameState,simulatedMove)
+                                virtualGameState = simulateMove(gameState,piece,(posX,posY))
                                 if not isInCheck(virtualGameState, piece['color']):
                                     validMoves.append((posX,posY))
                             else:
@@ -168,8 +165,7 @@ def checkPieceMoves(gameState, pieceID, simulateMoves):
                 break
 
             if simulateMoves:
-                simulatedMove = Move(gameID = Game.objects.get(id=gameState['id']), moveNumber = 0, pieceID = piece['id'], rankFile = coordToRankFile((posX,posY)))
-                virtualGameState = simulateMove(gameState,simulatedMove)
+                virtualGameState = simulateMove(gameState, piece, (posX,posY))
                 if not isInCheck(virtualGameState, piece['color']):
                     validMoves.append((posX,posY))
             else:
@@ -185,7 +181,7 @@ def checkBoardMoves(gameState, color):
 
     for piece in gameState['pieces']:
         if piece['color'] == color:
-            possibleMoves.append(checkPieceMoves(gameState, piece['id'], False))
+            possibleMoves = possibleMoves + checkPieceMoves(gameState, piece['id'], False)['validMoves']
 
     return possibleMoves
 
@@ -197,7 +193,7 @@ def move(gameID, piece, position):
     boardState = generateBoardState(gameID)
 
     # double check that the provided move is valid (should be in the list returned by checkMoves())
-    validMoves = checkPieceMoves(boardState, piece['id'], False)
+    validMoves = checkPieceMoves(boardState, piece['id'], True)
 
     if position in validMoves['validMoves']:
 
@@ -210,18 +206,16 @@ def move(gameID, piece, position):
         return False
 
 
-# simulates a single move without committing it to the DB, and returns the simulated board state
-def simulateMove(gameState, move):
-    virtualGameState = gameState
-    coords = rankFileToCoord(move.rankFile)
-    piece = virtualGameState['pieces'][move.pieceID]
-    piece['rank'] = coords[0]
-    piece['file'] = coords[1]
-    piece['hasMoved'] = True
-    virtualGameState['turnNumber'] += 1
+# simulates a single move without committing it to the DB or modifying the original board state, and returns the simulated board state
+def simulateMove(gameState, piece, position):
+    virtualGameState = gameState.copy()
+    vpiece = piece.copy()
+    vpiece['rank'] = position[0]
+    vpiece['file'] = position[1]
+    vpiece['hasMoved'] = True
 
     for boardPiece in virtualGameState['pieces']:
-        if boardPiece['rank'] == piece['rank'] and boardPiece['file'] == piece['file'] and boardPiece != piece:
+        if boardPiece['rank'] == vpiece['rank'] and boardPiece['file'] == vpiece['file'] and boardPiece != vpiece:
             boardPiece['captured'] = True
 
     return virtualGameState
@@ -237,7 +231,6 @@ def isInCheck(gameState, color):
         opposingColor = 'light'
     
     kingPos = (king['rank'], king['file'])
-
     possibleMoves = checkBoardMoves(gameState, opposingColor)
 
     if kingPos in possibleMoves:

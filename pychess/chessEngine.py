@@ -78,6 +78,8 @@ def checkPieceMoves(gameState, pieceID):
     piece = gameState['pieces'][pieceID]
     validMoves = []
 
+    print(piece)
+
     # This creates a list of tuples with the coordinates of every occupied space, and only the occupied spaces. 
     # We care about what color piece occupies the space, but not about any other information about the piece.
     piecePositionList = []
@@ -107,14 +109,98 @@ def checkPieceMoves(gameState, pieceID):
         # En Passant
         # Promotions
         
+    # Castling. Piece 28 is the light king. Cannot be in check to perform a castle.
+    # TODO: This section is a ton of text, and a lot of it is basically the same with just some ID numbers swapped out depending on whether the piece is light or dark. See if there's a shorter way to write this.
+    if piece['id'] == 28 and not isInCheck(gameState, piece['color']):
 
-    if piece['type'] == 'king':
-        # Castling
-        if not piece['hasMoved']:
-            if piece['color'] == 'light':
-                pass
-            elif piece['color'] == 'dark':
-                pass
+        # Left castle. Piece 24 is light Rook on left side. Neither piece can have moved at any point.
+        if piece['hasMoved'] == False and gameState['pieces'][24]['hasMoved'] == False:
+            canCastle = True
+            
+            # All three spaces between the rook and king must be empty.
+            for boardPiece in gameState['pieces']:
+                if (boardPiece['rank'] == 3 or boardPiece['rank'] == 2 or boardPiece['rank'] == 1) and boardPiece['file'] == 7:
+                    canCastle = False
+                    break
+            
+            # The King cannot move into check or through check
+            virtualGameState = simulateMove(gameState, piece['id'], (3,7))
+            if isInCheck(virtualGameState, piece['color']):
+                canCastle = False
+            else:
+                virtualGameState = simulateMove(gameState, piece['id'], (2,7))
+                if isInCheck(virtualGameState, piece['color']):
+                    canCastle = False
+
+            if canCastle:
+                validMoves.append((2,7))
+
+        # Right castle. Piece 31 is light Rook on right side. Neither piece can have moved at any point.
+        if piece['hasMoved'] == False and gameState['pieces'][31]['hasMoved'] == False:
+            canCastle = True
+            
+            # Both spaces between the rook and king must be empty.
+            for boardPiece in gameState['pieces']:
+                if (boardPiece['rank'] == 5 or boardPiece['rank'] == 6) and boardPiece['file'] == 7:
+                    canCastle = False
+                    break
+            
+            # The King cannot move into check or through check
+            virtualGameState = simulateMove(gameState, piece['id'], (5,7))
+            if isInCheck(virtualGameState, piece['color']):
+                canCastle = False
+            else:
+                virtualGameState = simulateMove(gameState, piece['id'], (6,7))
+                if isInCheck(virtualGameState, piece['color']):
+                    canCastle = False
+
+            if canCastle:
+                validMoves.append((6,7))
+
+
+    # Next big block is same logic for dark pieces. Piece 4 is the dark king
+    if piece['id'] == 4 and not isInCheck(gameState, piece['color']):
+
+        # Left castle. Piece 0 is dark rook on the left
+        if piece['hasMoved'] == False and gameState['pieces'][0]['hasMoved'] == False:
+            canCastle = True
+            
+            for boardPiece in gameState['pieces']:
+                if (boardPiece['rank'] == 3 or boardPiece['rank'] == 2 or boardPiece['rank'] == 1) and boardPiece['file'] == 0:
+                    canCastle = False
+                    break
+            
+            virtualGameState = simulateMove(gameState, piece['id'], (3,0))
+            if isInCheck(virtualGameState, piece['color']):
+                canCastle = False
+            else:
+                virtualGameState = simulateMove(gameState, piece['id'], (2,0))
+                if isInCheck(virtualGameState, piece['color']):
+                    canCastle = False
+
+            if canCastle:
+                validMoves.append((2,0))
+
+        # Right castle. Piece 7 is right dark rook
+        if piece['hasMoved'] == False and gameState['pieces'][7]['hasMoved'] == False:
+            canCastle = True
+            
+            for boardPiece in gameState['pieces']:
+                if (boardPiece['rank'] == 5 or boardPiece['rank'] == 6) and boardPiece['file'] == 0:
+                    canCastle = False
+                    break
+            
+            virtualGameState = simulateMove(gameState, piece['id'], (5,0))
+            if isInCheck(virtualGameState, piece['color']):
+                canCastle = False
+            else:
+                virtualGameState = simulateMove(gameState, piece['id'], (6,0))
+                if isInCheck(virtualGameState, piece['color']):
+                    canCastle = False
+
+            if canCastle:
+                validMoves.append((6,0))
+
 
 
     # Grabs a list of directions the given piece is allowed to move
@@ -182,8 +268,6 @@ def simulateMove(gameState, pieceID, position):
 # Checks if a player is in check. Returns True if so, or False otherwise.
 def isInCheck(gameState, color):
 
-    print("Begin Check:")
-
     if color == 'light':
         king = gameState['pieces'][28]
     elif color == 'dark':
@@ -198,13 +282,11 @@ def isInCheck(gameState, color):
 
     # Check north, south, east, and west until we hit a piece. If the piece is a rook or a queen, return True. 
     # If the piece is a King, and it's only one space away, return True.
-    print("Checking cardinal directions:")
     for direction in cardinalDirections:
         pieceFound = False
         for distance in range(8):
             checkX = king['rank'] + (direction[0] * (distance + 1))
             checkY = king['file'] + (direction[1] * (distance + 1))
-            print(f"Checking space ({checkX,checkY})")
             # If the check space is out of bounds, break and start searching in a new direction
             if checkX < 0 or checkX > 7 or checkY < 0 or checkY > 7:
                 break
@@ -215,17 +297,13 @@ def isInCheck(gameState, color):
                 # If a piece is found, check its type and distance.
                 if piece['captured'] == False and piece['rank'] == checkX and piece['file'] == checkY:
                     pieceFound = True
-                    print(f"Piece found: {piece['color']} {piece['type']} at ({piece['rank']}, {piece['file']})")
                     if piece['color'] != king['color'] and (piece['type'] == 'rook' or piece['type'] == 'queen'):
-                        print("King in check")
                         return True
                     elif piece['type'] == 'king' and distance == 1 and piece['color'] != king['color']:
-                        print("King in check")
                         return True
                 
                 # If a piece is found that doesn't place the king in check, break out of both inner loops and search in a new direction
                 if pieceFound:
-                    print("No check found; changing directions")
                     break
 
             if pieceFound:
@@ -235,13 +313,11 @@ def isInCheck(gameState, color):
     # Check diagonally in all four directions until a piece is hit. If the piece is a bishop or queen, return True
     # If the piece is a Pawn or a King, and it's only one space away, return True.
     # Pawns are weird because they can only capture NE/NW or SE/SW depending on their color
-    print("Checking ordinal directions:")
     for direction in ordinalDirections:
         pieceFound = False
         for distance in range(8):
             checkX = king['rank'] + (direction[0] * (distance + 1))
             checkY = king['file'] + (direction[1] * (distance + 1))
-            print(f"Checking space ({checkX,checkY})")
 
             # If the check space is out of bounds, break and start searching in a new direction
             if checkX < 0 or checkX > 7 or checkY < 0 or checkY > 7:
@@ -253,25 +329,20 @@ def isInCheck(gameState, color):
                 # If a piece is found, check its type and distance.
                 if piece['captured'] == False and piece['rank'] == checkX and piece['file'] == checkY:
                     pieceFound = True
-                    print(f"Piece found: {piece['color']} {piece['type']} at ({piece['rank']}, {piece['file']})")
                     if piece['color'] != king['color'] and (piece['type'] == 'bishop' or piece['type'] == 'queen'):
-                        print("King in check")
                         return True
                     elif piece['type'] == 'king' and distance == 1 and piece['color'] != king['color']:
-                        print("King in check")
                         return True
+        
                     # Pawns are weird again; if there's a pawn diagonally one space away from the king, need to check what color it is and if it's north or south of the king
                     elif piece['type'] == 'pawn' and distance == 1 and piece['color'] != king['color']:
                         if piece['color'] == 'light' and piece['file'] == king['file'] + 1:
-                            print("King in check")
                             return True
                         elif piece['color'] == 'dark' and piece['file'] == king['file'] - 1:
-                            print("King in check")
                             return True
                 
                 # If a piece is found that doesn't place the king in check, break out of both inner loops and search in a new direction
                 if pieceFound:
-                    print("No check found; changing directions")
                     break
 
             if pieceFound:
@@ -279,11 +350,9 @@ def isInCheck(gameState, color):
 
 
     # Check the surrounding spaces for a knight. If a knight is found, return True.
-    print("Checking for Knights:")
     for direction in knightSpaces:
         checkX = king['rank'] + direction[0]
         checkY = king['file'] + direction[1]
-        print(f"Checking space ({checkX,checkY})")
 
         # If the space to check is out of bounds, skip it and check a different space
         if checkX > 7 or checkX < 0 or checkY > 7 or checkY < 0:
@@ -291,16 +360,12 @@ def isInCheck(gameState, color):
 
         for piece in boardPieces:
             if piece['captured'] == False and piece['rank'] == checkX and piece['file'] == checkY:
-                print(f"Piece found: {piece['color']} {piece['type']} at ({piece['rank']}, {piece['file']})")
                 if piece['type'] == 'knight' and piece['color'] != king['color']:
-                    print("King in check")
                     return True
-                print("No check found; changing directions")
                 break
 
 
     # If all of the checks above fail, return false
-    print("No check found")
     return False
 
 
@@ -328,8 +393,9 @@ def move(gameID, piece, position):
 def generateBoardState(gameID):
     # generate a fresh board state
     # gather every move from the db with the associated gameID attached
-    # create a new board state based on the previous moves that have been made
-    
+    # update and return the board state based on the list of moves that have been made
+    # Assumes that if a Move is listed in the DB, it has already been verified to be a valid move
+
     boardState = createNewBoard(Game.objects.get(id=gameID))
 
     moveList = Move.objects.filter(gameID = Game.objects.get(id=gameID)).order_by('moveNumber')
@@ -338,15 +404,36 @@ def generateBoardState(gameID):
     if not moveList:
         return boardState    
 
-
+    # For every move in the movelist, update the relevant pieces location and increment the turn number
     for move in moveList:
         coords = rankFileToCoord(move.rankFile)
         piece = boardState['pieces'][move.pieceID]
         piece['rank'] = coords[0]
         piece['file'] = coords[1]
+
+        # This block performs a castle (moves both King and Rook) if the moving piece is a King that has not yet moved, and is moving two spaces either left or right of the starting position
+        # Piece ID's 0, 7, 24, and 31 are the four rooks on the board.
+        if piece['type'] == 'king' and piece['hasMoved'] == False:
+            if piece['rank'] == 2 and piece['file'] == 7:
+                boardState['pieces'][24]['rank'] = 3
+            elif piece['rank'] == 6 and piece['file'] == 7:
+                boardState['pieces'][31]['rank'] = 5
+            elif piece['rank'] == 2 and piece['file'] == 0:
+                boardState['pieces'][0]['rank'] = 3
+            elif piece['rank'] == 6 and piece['file'] == 0:
+                boardState['pieces'][7]['rank'] = 5
+ 
         piece['hasMoved'] = True
         boardState['turnNumber'] += 1
 
+        # This block promotes a pawn to a queen once it's made it all the way across the board
+        if piece['type'] == 'pawn' and piece['color'] == 'dark' and piece['file'] == 7:
+            piece['type'] = 'queen'
+        
+        if piece['type'] == 'pawn' and piece['color'] == 'light' and piece['file'] == 0:
+            piece['type'] = 'queen'
+        
+        # Checks if a piece is moving to an occupied square, and captures that piece if so
         for boardPiece in boardState['pieces']:
             if boardPiece['rank'] == piece['rank'] and boardPiece['file'] == piece['file'] and boardPiece != piece:
                 boardPiece['captured'] = True

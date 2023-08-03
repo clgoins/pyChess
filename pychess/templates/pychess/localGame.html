@@ -111,7 +111,7 @@ Play Chess!
         //click handler for an empty cell
         function clickCell(event, cellID)
         {
-            // cellID will be a string 'pX_Y' where X and Y are the cells coordinates. The 'p' is there because an HTML id has to start with a letter for some reason.
+            // cellID will be a string 'pX_Y' where X and Y are the cells coordinates. The 'p' is there because an HTML id has to start with a letter for some reason. (p = position)
             let posX = parseInt(cellID[1]);
             let posY = parseInt(cellID[3]);
 
@@ -151,15 +151,16 @@ Play Chess!
         function clickPiece(pieceID)
         {
         
-            //this line prevents the clickCell() handler from firing at the same time as clickPiece()
-            event.stopPropagation();
-
-            //when piece is clicked
+            //Make sure there isn't already a piece selected
             if (checkingMove === false)
             {
+                //this line prevents the clickCell() handler from firing at the same time as clickPiece()
+                event.stopPropagation();
+
                 // grab the specific piece from the gameState so there aren't so many brackets in the next if statement
                 let piece = gameState['pieces'][pieceID];
 
+                // Makes sure that if it's Light to move, that clicks only register on light pieces, or only on dark pieces if it's Dark to move
                 if((gameState['turnNumber'] % 2 === 0 && piece['color'] === 'light') || (gameState['turnNumber'] % 2 === 1 && piece['color'] === 'dark'))
                 {
                     checkingMove = true

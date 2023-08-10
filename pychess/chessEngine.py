@@ -90,7 +90,7 @@ def checkPieceMoves(gameState, pieceID):
     # If the piece is a pawn or a king that has special moves; check whether those special moves are allowed here:
     if piece['type'] == 'pawn':
         
-        # Regular pawn capturing
+        # *****Regular pawn capturing*******************************************
         checkLeft = piece['rank'] - 1
         checkRight = piece['rank'] + 1
         if piece['color'] == 'light':
@@ -101,15 +101,45 @@ def checkPieceMoves(gameState, pieceID):
             checkVert = piece['file'] + 1
 
         if (checkRight,checkVert, opposingColor) in piecePositionList:
-            validMoves.append((checkRight,checkVert))
+            virtualGameState = simulateMove(gameState, piece['id'], (checkRight,checkVert))
+            if not isInCheck(virtualGameState, piece['color']):
+                validMoves.append((checkRight,checkVert))
 
         if (checkLeft,checkVert, opposingColor) in piecePositionList:
-            validMoves.append((checkLeft,checkVert))
+            virtualGameState = simulateMove(gameState, piece['id'], (checkLeft,checkVert))
+            if not isInCheck(virtualGameState, piece['color']):
+                validMoves.append((checkLeft,checkVert))
 
-        # En Passant
-        # Promotions
+
+        # *****En Passant*******************************************************
+        ''' From Google: In chess, en passant (French: lit. "in passing") describes 
+        the capture by a pawn of an enemy pawn on the same rank and an adjacent file that has 
+        just made an initial two-square advance. The capturing pawn moves to the square that 
+        the enemy pawn passed over, as if the enemy pawn had advanced only one square.'''
         
-    # Castling. Piece 28 is the light king. Cannot be in check to perform a castle.
+        # The attacking pawn must be on File 3 for light pieces, or File 4 for dark pieces
+        if (piece['file'] == 3 and piece['color'] == 'light') or (piece['file'] == 4 and piece['color'] == 'dark'):
+            # Checks the board state to see if an opposite colored pawn is adjacent left or right to the attacking pawn. The defending Pawn also must have moved at some point.
+            for boardPiece in gameState['pieces']:
+                if boardPiece['file'] == piece['file'] and (boardPiece['rank'] == checkLeft or boardPiece['rank'] == checkRight) and boardPiece['captured'] == False and boardPiece['type'] == 'pawn' and boardPiece['color'] != piece['color'] and boardPiece['hasMoved'] == True:
+                    # Checks if the defending pawn moved two spaces on the previous turn.
+                    currentGame = Game.objects.get(id=gameState['id'])
+                    previousMove = Move.objects.filter(gameID=currentGame).get(moveNumber=gameState['turnNumber'] - 1)
+                    defenderMoveCount = Move.objects.filter(gameID=currentGame).filter(pieceID=boardPiece['id']).count()
+                    if previousMove.pieceID == boardPiece['id'] and defenderMoveCount == 1:
+                        # All conditions are correct for en passant
+                        if piece['color'] == 'light':
+                            virtualGameState = simulateMove(gameState, piece['id'], (boardPiece['rank'], boardPiece['file'] - 1))
+                            if not isInCheck(virtualGameState, piece['color']):
+                                validMoves.append((boardPiece['rank'], boardPiece['file'] - 1))
+                        elif piece['color'] == 'dark':
+                            virtualGameState = simulateMove(gameState, piece['id'], (boardPiece['rank'], boardPiece['file'] + 1))
+                            if not isInCheck(virtualGameState, piece['color']):
+                                validMoves.append((boardPiece['rank'], boardPiece['file'] + 1))
+                    
+
+    # *****Light Castling******************************************************
+    # Piece 28 is the light king. Cannot be in check to perform a castle.
     # TODO: This section is a ton of text, and a lot of it is basically the same with just some ID numbers swapped out depending on whether the piece is light or dark. See if there's a shorter way to write this.
     if piece['id'] == 28 and not isInCheck(gameState, piece['color']):
 
@@ -158,7 +188,8 @@ def checkPieceMoves(gameState, pieceID):
                 validMoves.append((6,7))
 
 
-    # Next big block is same logic for dark pieces. Piece 4 is the dark king
+    # *****Dark Castling*******************************************************
+    # Piece 4 is the dark king. Cannot be in check to perform a castle.
     if piece['id'] == 4 and not isInCheck(gameState, piece['color']):
 
         # Left castle. Piece 0 is dark rook on the left
@@ -202,7 +233,7 @@ def checkPieceMoves(gameState, pieceID):
                 validMoves.append((6,0))
 
 
-
+    # *****Standard moves******************************************************
     # Grabs a list of directions the given piece is allowed to move
     for direction in getMovementPattern(piece):
 
@@ -245,28 +276,14 @@ def checkPieceMoves(gameState, pieceID):
     return {'validMoves':validMoves}
 
 
-# moves a piece and creates a copy of the board state; without committing the move to the DB or altering the main gameState.
-# Used for verifying that a player cannot move themselves into check, per Chess rules
-def simulateMove(gameState, pieceID, position):
-    
-    # Creates a deep copy of the gameState object; so as not to modify any of the values in the gameState while working
-    virtualGameState = json.loads(json.dumps(gameState))
-    vPiece = virtualGameState['pieces'][pieceID]
-
-    vPiece['rank'] = position[0]
-    vPiece['file'] = position[1]
-    vPiece['hasMoved'] = True
-    virtualGameState['turnNumber'] += 1
-
-    for boardPiece in virtualGameState['pieces']:
-            if boardPiece['rank'] == vPiece['rank'] and boardPiece['file'] == vPiece['file'] and boardPiece != vPiece:
-                boardPiece['captured'] = True
-
-    return virtualGameState
-
-
 # Checks if a player is in check. Returns True if so, or False otherwise.
 def isInCheck(gameState, color):
+# Starts from the position of the king of the given color.
+# Picks one of the 8 directions around the king, and begins stepping in that direction until a piece or the edge of the board is reached.
+# Depening on the movement rules and the color of the piece that is encountered, determines if the king is in danger and returns true if so.
+# Then checks each of the 8 spaces surrounding the king where a knight may attack from, and checks if a knight of the opposite color exists, returning true if so.
+# If all the above checks fail, the player is not in check, and the function will return false.
+
 
     if color == 'light':
         king = gameState['pieces'][28]
@@ -299,8 +316,6 @@ def isInCheck(gameState, color):
                     pieceFound = True
                     if piece['color'] != king['color'] and (piece['type'] == 'rook' or piece['type'] == 'queen'):
                         return True
-                    elif piece['type'] == 'king' and distance == 1 and piece['color'] != king['color']:
-                        return True
                 
                 # If a piece is found that doesn't place the king in check, break out of both inner loops and search in a new direction
                 if pieceFound:
@@ -331,11 +346,9 @@ def isInCheck(gameState, color):
                     pieceFound = True
                     if piece['color'] != king['color'] and (piece['type'] == 'bishop' or piece['type'] == 'queen'):
                         return True
-                    elif piece['type'] == 'king' and distance == 1 and piece['color'] != king['color']:
-                        return True
         
                     # Pawns are weird again; if there's a pawn diagonally one space away from the king, need to check what color it is and if it's north or south of the king
-                    elif piece['type'] == 'pawn' and distance == 1 and piece['color'] != king['color']:
+                    elif piece['type'] == 'pawn' and distance == 0 and piece['color'] != king['color']:
                         if piece['color'] == 'light' and piece['file'] == king['file'] + 1:
                             return True
                         elif piece['color'] == 'dark' and piece['file'] == king['file'] - 1:
@@ -390,15 +403,17 @@ def move(gameID, piece, position):
 
 
 # recreates the most recent state of the board, given a gameID
-def generateBoardState(gameID):
+def generateBoardState(gameID, moveCount=-1):
     # generate a fresh board state
     # gather every move from the db with the associated gameID attached
+    # will limit the list to the first x moves, based on moveCount. If moveCount < 0, it will not limit the list.
     # update and return the board state based on the list of moves that have been made
     # Assumes that if a Move is listed in the DB, it has already been verified to be a valid move
 
     boardState = createNewBoard(Game.objects.get(id=gameID))
 
-    moveList = Move.objects.filter(gameID = Game.objects.get(id=gameID)).order_by('moveNumber')
+    if moveCount < 0:
+        moveList = Move.objects.filter(gameID = Game.objects.get(id=gameID)).order_by('moveNumber')
     
     # If the moveList is empty, go ahead and return the brand new board
     if not moveList:
@@ -408,6 +423,9 @@ def generateBoardState(gameID):
     for move in moveList:
         coords = rankFileToCoord(move.rankFile)
         piece = boardState['pieces'][move.pieceID]
+        previousRank = piece['rank']
+        previousFile = piece['file']
+        capturePerformed = False
         piece['rank'] = coords[0]
         piece['file'] = coords[1]
 
@@ -437,9 +455,72 @@ def generateBoardState(gameID):
         for boardPiece in boardState['pieces']:
             if boardPiece['rank'] == piece['rank'] and boardPiece['file'] == piece['file'] and boardPiece != piece:
                 boardPiece['captured'] = True
+                capturePerformed = True
+                break
 
+        # This block checks if a pawn moves diagonally without moving into an occupied square. Assumes En Passant if so and captures the defending pawn.
+        if piece['type'] == 'pawn' and capturePerformed == False and (piece['rank'] == previousRank - 1 or piece['rank'] == previousRank + 1):
+            # Find the defending pawn in the position that's being attacked, and capture it.
+            for boardPiece in boardState['pieces']:
+                if boardPiece['rank'] == piece['rank'] and boardPiece['file'] == previousFile:
+                    boardPiece['captured'] = True
+                    break
 
     return boardState
+
+
+# Creates a deep copy of the board state and moves the given piece to the given position on that copied state, without committing the move to the DB or altering the main gameState.
+# Used for verifying that a player cannot move themselves into check, per Chess rules
+# Very similar to generateBoardState, but doesn't touch the database
+def simulateMove(gameState, pieceID, position):
+    
+    # Creates a deep copy of the gameState object; so as not to modify any of the values in the gameState while working
+    virtualGameState = json.loads(json.dumps(gameState))
+    vPiece = virtualGameState['pieces'][pieceID]
+
+    previousRank = vPiece['rank']
+    previousFile = vPiece['file']
+    capturePerformed = False
+    vPiece['rank'] = position[0]
+    vPiece['file'] = position[1]
+
+    # Castling
+    if vPiece['type'] == 'king' and vPiece['hasMoved'] == False:
+        if vPiece['rank'] == 2 and vPiece['file'] == 7:
+            virtualGameState['pieces'][24]['rank'] = 3
+        elif vPiece['rank'] == 6 and vPiece['file'] == 7:
+            virtualGameState['pieces'][31]['rank'] = 5
+        elif vPiece['rank'] == 2 and vPiece['file'] == 0:
+            virtualGameState['pieces'][0]['rank'] = 3
+        elif vPiece['rank'] == 6 and vPiece['file'] == 0:
+            virtualGameState['pieces'][7]['rank'] = 5
+
+    vPiece['hasMoved'] = True
+    virtualGameState['turnNumber'] += 1
+
+    # Promotion
+    if vPiece['type'] == 'pawn' and vPiece['color'] == 'dark' and vPiece['file'] == 7:
+        vPiece['type'] = 'queen'
+        
+    if vPiece['type'] == 'pawn' and vPiece['color'] == 'light' and vPiece['file'] == 0:
+        vPiece['type'] = 'queen'
+
+    # Capturing
+    for boardPiece in virtualGameState['pieces']:
+            if boardPiece['rank'] == vPiece['rank'] and boardPiece['file'] == vPiece['file'] and boardPiece != vPiece:
+                boardPiece['captured'] = True
+                capturePerformed = True
+                break
+
+    # En Passant
+    if vPiece['type'] == 'pawn' and capturePerformed == False and (vPiece['rank'] == previousRank - 1 or vPiece['rank'] == previousRank + 1):
+        # Find the defending pawn in the position that's being attacked, and capture it.
+        for boardPiece in virtualGameState['pieces']:
+            if boardPiece['rank'] == vPiece['rank'] and boardPiece['file'] == previousFile:
+                boardPiece['captured'] = True
+                break
+
+    return virtualGameState
 
 
 # accepts a tuple (x,y), returns a string 'RF'

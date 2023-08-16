@@ -78,8 +78,6 @@ def checkPieceMoves(gameState, pieceID):
     piece = gameState['pieces'][pieceID]
     validMoves = []
 
-    print(piece)
-
     # This creates a list of tuples with the coordinates of every occupied space, and only the occupied spaces. 
     # We care about what color piece occupies the space, but not about any other information about the piece.
     piecePositionList = []
@@ -276,6 +274,18 @@ def checkPieceMoves(gameState, pieceID):
     return {'validMoves':validMoves}
 
 
+# Counts the number of legal moves a player has. If the count is 0; the player has no legal moves and the game is over.
+def countValidMoves(gameState, color):
+    pieces = gameState['pieces']
+    moveCount = 0
+
+    for piece in pieces:
+        if piece['captured'] == False and piece['color'] == color:
+            moveList = checkPieceMoves(gameState, piece['id'])
+            moveCount += len(moveList['validMoves'])
+
+    return moveCount
+
 # Checks if a player is in check. Returns True if so, or False otherwise.
 def isInCheck(gameState, color):
 # Starts from the position of the king of the given color.
@@ -453,7 +463,8 @@ def generateBoardState(gameID, moveCount=-1):
         
         # Checks if a piece is moving to an occupied square, and captures that piece if so
         for boardPiece in boardState['pieces']:
-            if boardPiece['rank'] == piece['rank'] and boardPiece['file'] == piece['file'] and boardPiece != piece:
+            if boardPiece['captured'] == False and boardPiece['rank'] == piece['rank'] and boardPiece['file'] == piece['file'] and boardPiece != piece:
+                print(f"{piece['color']} {piece['type']} capturing {boardPiece['color']} {boardPiece['type']} at {piece['rank']}, {piece['file']}")
                 boardPiece['captured'] = True
                 capturePerformed = True
                 break

@@ -172,6 +172,31 @@ def submitMove(request):
         return JsonResponse({'error':'invalid request method'}, status=405)
 
 
+# Executes once at the start of each turn; checks if the player has any possible moves. If no; the game is over. If the player is in check, it's a checkmate, if not, it's a stalemate.
+def checkForWinCondition(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        gameState = data.get('state')
+        color = data.get('color')
+
+        if chessEngine.countValidMoves(gameState,color) == 0:
+            if chessEngine.isInCheck(gameState,color):
+                activeGame = Game.objects.get(id=gameState['id'])
+                activeGame.isActive = False
+                activeGame.winner = activeGame.player2
+                activeGame.save()
+                return JsonResponse({'message':'checkmate'})
+            else:
+                activeGame = Game.objects.get(id=gameState['id'])
+                activeGame.isActive = False
+                activeGame.save()
+                return JsonResponse({'message':'stalemate'})
+        else:
+            return JsonResponse({'message':'no win'})
+    else:
+        return JsonResponse({'error':'invalid request method'}, status=405)
+
+
 # Generates a room code; string of 6 random numbers & capital letters. Used for players to join network games, and for some game identification purposes.
 def generateNewRoomCode():
     

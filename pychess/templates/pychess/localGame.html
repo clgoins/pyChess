@@ -8,12 +8,18 @@ Play Chess!
 
 
 {% block body %}
-    You are starting a local game
-    <div id="board">
+    <main class="gameContainer">
+        
+        <div class="board" id="board">
 
-    </div>
+        </div>
 
-
+        <div class="info" id="info">
+            <h2 id="status">
+                <strong id="player">Light</strong> to move
+            </h2>
+        </div>
+    </main>
     {% csrf_token %}
 
 
@@ -24,13 +30,14 @@ Play Chess!
         const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         var gameID = '{{ gameID }}'
 
-
+        //Begin the game by calling getGameState(), which will return a fresh board. Then draw the board and the pieces on it.
         let statePromise = getGameState();
         statePromise.then((state) => {
             gameState = state;
             drawBoard();
             drawPieces(state);
         });
+
 
         //returns a promise that will contain a JSON object with the current game state once fulfilled
         async function getGameState()
@@ -40,12 +47,15 @@ Play Chess!
             return state;
         }
 
+
         //renders the checkerboard pattern on the screen, in the form of an HTML table
         function drawBoard()
         {
             let board = document.createElement("table");
             let isLight=true;
             let cellSize;
+
+            //Determine cellSize based on the size of the window
             if (window.innerHeight < window.innerWidth)
             {
                 cellSize = `${window.innerHeight / 10}px`;
@@ -55,6 +65,7 @@ Play Chess!
                 cellSize = `${window.innerWidth / 10}px`;
             }
 
+            //Couple of nested for loops to draw an 8x8 grid of cells, alternating light and dark
             for (let i = 0; i < 8; i++)
             {
                 let row = document.createElement("tr");
@@ -63,12 +74,17 @@ Play Chess!
                     let cell = document.createElement("td");
                     cell.style.width = cellSize;
                     cell.style.height = cellSize;
-                    cell.id = `p${j}_${i}`;
-                    if(isLight)
-                        cell.style.backgroundColor = "#FFFFFF";
-                    else
-                        cell.style.backgroundColor = "#000000"
 
+                    //HTML ID's cannot start with a number for some reason, so the id is prefixed with a 'p'
+                    cell.id = `p${j}_${i}`;
+
+                    //Picks the background color for the cell
+                    if(isLight)
+                        cell.style.backgroundColor = "#b3a58f";
+                    else
+                        cell.style.backgroundColor = "#30538c"
+
+                    //Once the size and color of the cell has been created, add a click handler to it
                     cell.addEventListener('click', (event) => clickCell(event, cell.id));
 
                     row.append(cell);
@@ -79,14 +95,16 @@ Play Chess!
                 isLight = !isLight;
             }
 
+            //Clear off the existing board before redrawing it
             document.querySelector('#board').innerHTML = '';
             document.querySelector('#board').append(board);
         }
 
+
         //reads each piece position from the gameState, and adds <img> tags with click handlers to represent each piece to the board
         function drawPieces()
         {
-            //grab an array of the keys from the gameState object to iterate through
+            //grab an array of pieces from the gameState object to iterate through
             pieces = gameState['pieces']
 
             for(let i = 0; i < pieces.length; i++)
@@ -95,7 +113,6 @@ Play Chess!
                 if(!pieces[i]['captured'])
                 {
                     //create an image tag for each piece
-                    //const image = getImage(pieceCode);
                     const image = document.createElement("img");
                     image.src=`/static/pychess/images/${pieces[i]['type']}_${pieces[i]['color']}.png`
                     
@@ -108,20 +125,23 @@ Play Chess!
             }
         }
 
+
         //click handler for an empty cell
         function clickCell(event, cellID)
         {
-            // cellID will be a string 'pX_Y' where X and Y are the cells coordinates. The 'p' is there because an HTML id has to start with a letter for some reason. (p = position)
-            let posX = parseInt(cellID[1]);
-            let posY = parseInt(cellID[3]);
 
+            // ClickCell should only do anything if the player has already clicked a piece and is now selecting from a highlighted list of valid moves.
             if (checkingMove === true && activePiece != null)
             {
 
                 checkingMove = false;
 
+                // cellID will be a string 'pX_Y' where X and Y are the cells coordinates. The 'p' is there because an HTML id has to start with a letter for some reason. (p = position)
+                let posX = parseInt(cellID[1]);
+                let posY = parseInt(cellID[3]);
+
                 // Fetch submitMove, passing the piece, position, and gameID as POST parameters
-                // Note that submitMove wants the gameID and NOT the gameState. The state will be recreated on the backend to ensure the move is valid; 
+                // Note that submitMove wants the gameID and NOT the gameState. The state will be recreated on the backend to ensure the move is valid 
                 // in the event that the request is modified in some way. (To prevent cheating)
                 fetch("{% url 'submitMove' %}", {
                     method:'POST',
@@ -136,16 +156,61 @@ Play Chess!
                 })
                 .then(response => response.json())
                 .then(result =>         {
-                    console.log(result);
+                    
                     let statePromise = getGameState();
                     statePromise.then((state) => {
                     gameState = state;
+
+                    //If the move was submitted successfully, the turn is complete and a few things are set up for the start of the next turn.
+                    if(result['message'] === "success")
+                    {
+                        //Figure out whose turn it is and display it on the screen
+                        let turn = ''
+                        if (gameState['turnNumber'] % 2 == 0)
+                        {
+                            turn = 'light'
+                            document.querySelector("#player").innerHTML = "Light ";
+                        }
+                        else
+                        {
+                            turn = 'dark'
+                            document.querySelector("#player").innerHTML = "Dark";
+                        }
+
+                        //Check for a checkmate or stalemate, and update the status message accordingly.
+                        fetch("{% url 'checkForWinCondition' %}", {
+                            method:'POST',
+                            headers: {'X-CSRFToken':csrftoken},
+                            mode: 'same-origin',
+                            body: JSON.stringify({
+                            state:gameState,
+                            color:turn           
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(winCondition => {
+                            if (winCondition['message'] === "checkmate")
+                            {
+                                let winner = "";
+                                if (turn === 'light')
+                                    winner = "Dark";
+                                else
+                                    winner = 'Light';
+
+                                document.querySelector("#status").innerHTML = `${winner} wins by checkmate`
+                            }
+                            else if (winCondition['message'] === "stalemate")
+                                document.querySelector("#status").innerHTML = "Game ends in a stalemate"
+                        })
+                    }
+
                     drawBoard();
                     drawPieces(state);
                     });
                 });
             }
         }
+
 
         //click handler for any of the pieces on the board
         function clickPiece(pieceID)
@@ -165,11 +230,14 @@ Play Chess!
                 {
                     checkingMove = true
                     activePiece = piece;
+                    cellToHighlight = document.querySelector(`#p${piece['rank']}_${piece['file']}`);
+                    cellToHighlight.style.backgroundColor = 'aliceBlue';
                     checkMoves(piece['id']);
                 }
             }
 
         }
+
 
         //makes a call to the backend to get a list of valid coordinates a piece can move to, and then colors those squares green
         function checkMoves(pieceID)
@@ -187,7 +255,7 @@ Play Chess!
             .then(moveList => {
                 moveList['validMoves'].forEach((move) => {
                     cellToHighlight = document.querySelector(`#p${move[0]}_${move[1]}`);
-                    cellToHighlight.style.backgroundColor = 'green';
+                    cellToHighlight.style.backgroundColor = 'springGreen';
                 })
             })
         }

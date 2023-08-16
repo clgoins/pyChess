@@ -35,3 +35,19 @@ a {
     color:white;
     text-align:center;
 }
+
+.gameContainer {
+    clear:both;
+    display:table;
+}
+
+.board {
+    float:left;
+    height:100%;
+}
+
+.info {
+    margin-left: 50px;
+    height:100%;
+    float:right;
+}

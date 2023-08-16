@@ -16,7 +16,7 @@ Play Chess!
 
         <div class="info" id="info">
             <h2 id="status">
-                <strong id="player">Light</strong> to move
+                <strong id="player"></strong> to move
             </h2>
         </div>
     </main>
@@ -34,6 +34,13 @@ Play Chess!
         let statePromise = getGameState();
         statePromise.then((state) => {
             gameState = state;
+
+            //Update the status message with whose turn it is
+            if(gameState['turnNumber'] % 2 == 0)
+                document.querySelector("#player").innerHTML = 'Light';
+            else
+                document.querySelector("#player").innerHTML = 'Dark';
+
             drawBoard();
             drawPieces(state);
         });

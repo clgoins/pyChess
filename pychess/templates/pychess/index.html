@@ -7,5 +7,13 @@ pyChess Home
 
 
 {% block body %}
-Test
+    {% if localGames %}
+        <Strong>Local Games: </Strong>
+        <br>
+        {% for game in localGames %}
+            <a href="{% url 'localGame' %}?room={{game.roomCode}}">{{ game }}</a><br>
+        {% endfor %}
+    {% else %}
+        No Active Games
+    {% endif %}
 {% endblock %}

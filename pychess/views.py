@@ -9,7 +9,8 @@ from . import chessEngine
 import string, random
 
 def index(request):
-    return render(request, 'pychess/index.html')
+    localGames = Game.objects.filter(player1 = request.user, player2 = request.user)
+    return render(request, 'pychess/index.html', {'localGames':localGames})
 
 
 def loginView(request):
@@ -75,10 +76,12 @@ def localGame(request):
         if room == None:
             # create a new game entry in the DB
             # local games will use the same player name for both player 1 and player 2
-
-            newGame = Game(roomCode = generateNewRoomCode(), player1=request.user, player2=request.user, isActive=True)
+            newRoomCode = generateNewRoomCode()
+            newGame = Game(roomCode = newRoomCode, player1=request.user, player2=request.user, isActive=True)
             newGame.save()
-            return render(request, 'pychess/localGame.html', {'gameID':newGame.id})
+            response = redirect('localGame')
+            response['Location'] += f'?room={newRoomCode}'
+            return response
         else:
             game = Game.objects.get(roomCode = room)
             return render(request, 'pychess/localGame.html', {'gameID':game.id})
@@ -120,6 +123,7 @@ def spectate(request):
 
 # API =====================
 
+# Takes a gameID and returns a gameState object
 def getGameState(request):
     if request.method =='GET':
         try:
@@ -152,6 +156,7 @@ def checkMoves(request):
         return JsonResponse({'error':'invalid request method'}, status=405)
 
 
+# Takes a gameID, a piece, and a desired position to move to. Will verify the move is legal, and will update the database accordingly and generate a new board state.
 def submitMove(request):
 
     if request.method == 'POST':

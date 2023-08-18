@@ -464,7 +464,6 @@ def generateBoardState(gameID, moveCount=-1):
         # Checks if a piece is moving to an occupied square, and captures that piece if so
         for boardPiece in boardState['pieces']:
             if boardPiece['captured'] == False and boardPiece['rank'] == piece['rank'] and boardPiece['file'] == piece['file'] and boardPiece != piece:
-                print(f"{piece['color']} {piece['type']} capturing {boardPiece['color']} {boardPiece['type']} at {piece['rank']}, {piece['file']}")
                 boardPiece['captured'] = True
                 capturePerformed = True
                 break

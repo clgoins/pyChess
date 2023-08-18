@@ -18,6 +18,7 @@ urlpatterns = [
     path("check", views.checkMoves, name="checkMoves"),
     path("gameState", views.getGameState, name="gameState"),
     path("move", views.submitMove, name="submitMove"),
-    path("win", views.checkForWinCondition, name="checkForWinCondition")
+    path("win", views.checkForWinCondition, name="checkForWinCondition"),
+    path("moveList", views.getMoveList, name="moveList")
     
 ]

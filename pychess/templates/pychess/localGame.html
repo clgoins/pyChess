@@ -8,18 +8,29 @@ Play Chess!
 
 
 {% block body %}
-    <main class="gameContainer">
-        
-        <div class="board" id="board">
+        <div class="centeredContent">
+            <div class="main">
+                <div class="game">
+                    <div class="boardContainer" id="boardContainer">
 
+                    </div>
+                </div>
+                <div class="info">
+                    <div class="infoTop">
+                        <h2 id="status">
+                            <strong id="player"></strong> to move
+                        </h2>
+                    </div>
+                    <div class="infoBottom" id="moveList">
+
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="info" id="info">
-            <h2 id="status">
-                <strong id="player"></strong> to move
-            </h2>
-        </div>
-    </main>
+
+
+
     {% csrf_token %}
 
 
@@ -43,6 +54,7 @@ Play Chess!
 
             drawBoard();
             drawPieces(state);
+            updateMoveList(state);
         });
 
 
@@ -55,41 +67,59 @@ Play Chess!
         }
 
 
+        function updateMoveList(state)
+        {
+            fetch("{% url 'moveList' %}", {
+                method:'POST',
+                headers: {'X-CSRFToken':csrftoken},
+                mode: 'same-origin',
+                body: JSON.stringify({state:gameState})
+            })
+            .then(response => response.json())
+            .then(rawMoveList => {
+
+                let moveListPanel = document.querySelector("#moveList");
+                moveListPanel.innerHTML = "";
+                let moveList = rawMoveList['moveList'];
+                let pieces = state['pieces'];
+
+                for (let i = 0 ; i < moveList.length; i++)
+                {
+                    let moveCard = document.createElement('div');
+                    let move = moveList[i];
+                    moveCard.className = 'move';
+                    moveCard.innerHTML = `${move['turn']}: ${state['pieces'][move['pieceID']]['color']} ${state['pieces'][move['pieceID']]['type']} to ${move['position']}`;
+                    moveListPanel.prepend(moveCard);
+                }
+
+            })
+        }
+
         //renders the checkerboard pattern on the screen, in the form of an HTML table
         function drawBoard()
         {
             let board = document.createElement("table");
+            board.className = "board";
             let isLight=true;
-            let cellSize;
-
-            //Determine cellSize based on the size of the window
-            if (window.innerHeight < window.innerWidth)
-            {
-                cellSize = `${window.innerHeight / 10}px`;
-            }
-            else
-            {
-                cellSize = `${window.innerWidth / 10}px`;
-            }
 
             //Couple of nested for loops to draw an 8x8 grid of cells, alternating light and dark
             for (let i = 0; i < 8; i++)
             {
                 let row = document.createElement("tr");
+                row.className = "boardRow";
+
                 for (let j = 0; j < 8; j++)
                 {
                     let cell = document.createElement("td");
-                    cell.style.width = cellSize;
-                    cell.style.height = cellSize;
 
                     //HTML ID's cannot start with a number for some reason, so the id is prefixed with a 'p'
                     cell.id = `p${j}_${i}`;
 
                     //Picks the background color for the cell
                     if(isLight)
-                        cell.style.backgroundColor = "#b3a58f";
+                        cell.className = "lightCell";
                     else
-                        cell.style.backgroundColor = "#30538c"
+                        cell.className = "darkCell";
 
                     //Once the size and color of the cell has been created, add a click handler to it
                     cell.addEventListener('click', (event) => clickCell(event, cell.id));
@@ -103,8 +133,8 @@ Play Chess!
             }
 
             //Clear off the existing board before redrawing it
-            document.querySelector('#board').innerHTML = '';
-            document.querySelector('#board').append(board);
+            document.querySelector('#boardContainer').innerHTML = '';
+            document.querySelector('#boardContainer').append(board);
         }
 
 
@@ -213,6 +243,7 @@ Play Chess!
 
                     drawBoard();
                     drawPieces(state);
+                    updateMoveList(state);
                     });
                 });
             }

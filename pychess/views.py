@@ -136,6 +136,28 @@ def getGameState(request):
         return JsonResponse({'error':'invalid request method'}, status=405)
 
 
+# Sends the list of moves to the frontend to display in the info panel
+def getMoveList(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        gameState = data.get('state')
+        moveList = []
+        rawMoveList = Move.objects.filter(gameID=Game.objects.get(id=gameState['id']))
+
+        for move in rawMoveList:
+            newMove = {}
+            newMove['turn'] = move.moveNumber + 1
+            newMove['pieceID'] = move.pieceID
+            newMove['position'] = move.rankFile
+            moveList.append(newMove)
+
+        responseObject = {}
+        responseObject['moveList'] = moveList
+
+        return JsonResponse(responseObject)
+    else:
+        return JsonResponse({"error":"invalid request method"}, status=405)
+
 # takes some info about a piece on the board and returns a list of all of its valid moves
 def checkMoves(request):
     

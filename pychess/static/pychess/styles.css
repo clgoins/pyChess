@@ -6,6 +6,11 @@ a {
     color:rgb(233, 208, 145);
 }
 
+a:hover {
+    color:#30538c;
+    background-color: aliceblue;
+}
+
 img {
     width: 75%;
     height:75%;
@@ -13,9 +18,48 @@ img {
 
 .header {
     height:10vh;
-    min-height:49px;
+    width:100%;
+    min-height:80px;
     min-width:1008px;
     color:aliceblue;
+    position: relative;
+    float: left;
+    margin-bottom: 1vh;
+}
+
+.mainHeading {
+    position:relative;
+    font-size: max(24px,3vh); 
+    font-weight: bold; 
+    text-indent:10px;
+    float:left;
+}
+
+.subHeading {
+    float:left;
+    clear:both;
+    font-size: max(12px,1.5vh);
+    text-indent: 10px;
+}
+
+.navbar {
+    clear:both;
+    border-bottom: solid;
+    border-top: solid;
+    border-color: aliceblue;
+    width:100%;
+    position:absolute;
+    bottom:0;
+    padding:5px;
+}
+
+.navlink {
+    padding-left:20px;
+    padding-right:20px;
+    font-weight:bold;
+    border-left: solid;
+    border-right:solid;
+    border-color:aliceblue;
 }
 
 .footer {
@@ -24,12 +68,16 @@ img {
     min-width:1008px;
     text-align: center;
     color:aliceblue;
+    border-top:solid;
+    border-color:aliceblue;
 }
 
 .content {
+    clear:both;
     height: 85vh;
     min-height:412px;
     min-width:1008px;
+    color:aliceblue;
 }
 
 .centeredContent {

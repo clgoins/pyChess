@@ -286,6 +286,7 @@ def countValidMoves(gameState, color):
 
     return moveCount
 
+
 # Checks if a player is in check. Returns True if so, or False otherwise.
 def isInCheck(gameState, color):
 # Starts from the position of the king of the given color.
@@ -326,6 +327,9 @@ def isInCheck(gameState, color):
                     pieceFound = True
                     if piece['color'] != king['color'] and (piece['type'] == 'rook' or piece['type'] == 'queen'):
                         return True
+                    
+                    if piece['color'] != king['color'] and piece['type'] == 'king' and distance == 0:
+                        return True
                 
                 # If a piece is found that doesn't place the king in check, break out of both inner loops and search in a new direction
                 if pieceFound:
@@ -355,6 +359,9 @@ def isInCheck(gameState, color):
                 if piece['captured'] == False and piece['rank'] == checkX and piece['file'] == checkY:
                     pieceFound = True
                     if piece['color'] != king['color'] and (piece['type'] == 'bishop' or piece['type'] == 'queen'):
+                        return True
+                    
+                    if piece['color'] != king['color'] and piece['type'] == 'king' and distance == 0:
                         return True
         
                     # Pawns are weird again; if there's a pawn diagonally one space away from the king, need to check what color it is and if it's north or south of the king

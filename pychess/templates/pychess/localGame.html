@@ -41,6 +41,9 @@ Play Chess!
         const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         var gameID = '{{ gameID }}'
 
+        //Learned about this trick on Stack Overflow. Will allow me to disable all of the click handlers on the page with one line at the end of the game.
+        const killClickHandlers = new AbortController();
+
         //Begin the game by calling getGameState(), which will return a fresh board. Then draw the board and the pieces on it.
         let statePromise = getGameState();
         statePromise.then((state) => {
@@ -55,6 +58,7 @@ Play Chess!
             drawBoard();
             drawPieces(state);
             updateMoveList(state);
+            checkWinCondition();
         });
 
 
@@ -122,7 +126,7 @@ Play Chess!
                         cell.className = "darkCell";
 
                     //Once the size and color of the cell has been created, add a click handler to it
-                    cell.addEventListener('click', (event) => clickCell(event, cell.id));
+                    cell.addEventListener('click', (event) => clickCell(event, cell.id), {signal:killClickHandlers.signal});
 
                     row.append(cell);
                     isLight = !isLight;
@@ -154,7 +158,7 @@ Play Chess!
                     image.src=`/static/pychess/images/${pieces[i]['type']}_${pieces[i]['color']}.png`
                     
                     //when the piece is clicked, call clickPiece() and pass in i as the id number
-                    image.addEventListener('click', () => clickPiece(i));
+                    image.addEventListener('click', () => clickPiece(i), {signal:killClickHandlers.signal});
 
                     //find the correct space to place it, and append the image file
                     document.querySelector(`#p${pieces[i]['rank']}_${pieces[i]['file']}`).append(image);
@@ -167,10 +171,12 @@ Play Chess!
         function clickCell(event, cellID)
         {
 
-            // ClickCell should only do anything if the player has already clicked a piece and is now selecting from a highlighted list of valid moves.
+            //These two variables are set in the clickPiece function.
+            //This function will do nothing unless a piece has been clicked and its valid moves are being displayed to the player.
             if (checkingMove === true && activePiece != null)
             {
 
+                //If a cell is clicked, the player has committed to a move and is no longer "checking" moves
                 checkingMove = false;
 
                 // cellID will be a string 'pX_Y' where X and Y are the cells coordinates. The 'p' is there because an HTML id has to start with a letter for some reason. (p = position)
@@ -194,6 +200,7 @@ Play Chess!
                 .then(response => response.json())
                 .then(result =>         {
                     
+                    // Get the new gameState, since it has potentially been modified on the backend after the previous fetch
                     let statePromise = getGameState();
                     statePromise.then((state) => {
                     gameState = state;
@@ -215,32 +222,10 @@ Play Chess!
                         }
 
                         //Check for a checkmate or stalemate, and update the status message accordingly.
-                        fetch("{% url 'checkForWinCondition' %}", {
-                            method:'POST',
-                            headers: {'X-CSRFToken':csrftoken},
-                            mode: 'same-origin',
-                            body: JSON.stringify({
-                            state:gameState,
-                            color:turn           
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(winCondition => {
-                            if (winCondition['message'] === "checkmate")
-                            {
-                                let winner = "";
-                                if (turn === 'light')
-                                    winner = "Dark";
-                                else
-                                    winner = 'Light';
-
-                                document.querySelector("#status").innerHTML = `${winner} wins by checkmate`
-                            }
-                            else if (winCondition['message'] === "stalemate")
-                                document.querySelector("#status").innerHTML = "Game ends in a stalemate"
-                        })
+                        checkWinCondition();
                     }
 
+                    //Repaint the updated board and info panel
                     drawBoard();
                     drawPieces(state);
                     updateMoveList(state);
@@ -251,9 +236,9 @@ Play Chess!
 
 
         //click handler for any of the pieces on the board
-        function clickPiece(pieceID)
+        function clickPiece(event, pieceID)
         {
-        
+
             //Make sure there isn't already a piece selected
             if (checkingMove === false)
             {
@@ -266,10 +251,15 @@ Play Chess!
                 // Makes sure that if it's Light to move, that clicks only register on light pieces, or only on dark pieces if it's Dark to move
                 if((gameState['turnNumber'] % 2 === 0 && piece['color'] === 'light') || (gameState['turnNumber'] % 2 === 1 && piece['color'] === 'dark'))
                 {
+                    //These two variables will be checked in the clickCell function once a desired move is selected.
                     checkingMove = true
                     activePiece = piece;
+
+                    //Highlights the cell the selected piece sits on.
                     cellToHighlight = document.querySelector(`#p${piece['rank']}_${piece['file']}`);
                     cellToHighlight.style.backgroundColor = 'aliceBlue';
+
+                    //Passes the piece ID off to do the actual checking.
                     checkMoves(piece['id']);
                 }
             }
@@ -291,11 +281,65 @@ Play Chess!
             })
             .then(response => response.json())
             .then(moveList => {
+
+                //The chess engine will spit out a list of possible spaces the piece can move; this will highlight the legal moves in green.
                 moveList['validMoves'].forEach((move) => {
                     cellToHighlight = document.querySelector(`#p${move[0]}_${move[1]}`);
                     cellToHighlight.style.backgroundColor = 'springGreen';
                 })
             })
+        }
+
+
+        //at the start of every turn; check to see if a win or stalemate condition has been reached
+        function checkWinCondition()
+        {
+
+            //determine whose turn it is
+            let playerTurn;
+            if (gameState['turnNumber'] % 2 == 0)
+                playerTurn = 'light';
+            else
+                playerTurn = 'dark';
+
+            //make a call to the chess engine to do the actual checking
+            fetch("{% url 'checkForWinCondition' %}", {
+                            method:'POST',
+                            headers: {'X-CSRFToken':csrftoken},
+                            mode: 'same-origin',
+                            body: JSON.stringify({
+                            state:gameState,
+                            color:playerTurn           
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(winCondition => {
+
+                            //If a checkmate has been achieved; update the status message and disable all the click event handlers.
+                            if (winCondition['message'] === "checkmate")
+                            {
+                                let winner = "";
+                                if (turn === 'light')
+                                    winner = "Dark";
+                                else
+                                    winner = 'Light';
+
+                                document.querySelector("#status").innerHTML = `${winner} wins by checkmate`
+                                killClickHandlers.abort();
+                            }
+
+                            //Do the same for a stalemate or for a draw.
+                            else if (winCondition['message'] === "stalemate")
+                            {
+                                document.querySelector("#status").innerHTML = "Game ends in a stalemate"
+                                killClickHandlers.abort();
+                            }
+                            else if (winCondition['message'] === "draw")
+                            {
+                                document.querySelector("#status").innerHTML = "Game ends in a draw"
+                                killClickHandlers.abort();
+                            }
+                        })
         }
 
     </script>

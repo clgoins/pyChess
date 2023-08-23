@@ -280,12 +280,79 @@ def countValidMoves(gameState, color):
     moveCount = 0
 
     for piece in pieces:
-        if piece['captured'] == False and piece['color'] == color:
+        if piece['captured'] == False and piece['color'] == color and piece['type'] != 'king':
             moveList = checkPieceMoves(gameState, piece['id'])
             moveCount += len(moveList['validMoves'])
 
+    # If the King can move, and it's the ONLY piece that can move, return -1 to signify that the opponents moves need to be counted.
+    # If both players moves are counted and return -1; the game ends in a stalemate.
+    if moveCount == 0:
+        if color == 'light':
+            moveList = checkPieceMoves(gameState, pieces[28])
+        elif color == 'dark':
+            moveList = checkPieceMoves(gameState, pieces[4])
+
+        if len(moveList['validMoves'] > 0):
+            return -1
+
     return moveCount
 
+
+# Checks both players remaining pieces to check for a draw by insufficient material (i.e. not possible to perform a checkmate with the remaining pieces on the board)
+# Insufficient material is defined as (per Chess.com): King vs King; King & Bishop vs King; King & Kight vs King; King & Bishop vs King & Bishop, where both bishops occupy the same colored square.
+# Returns True in the case of a draw; or False otherwise
+def checkForInsufficientMaterial(gameState):
+    lightPieces = []
+    darkPieces  = []
+    
+    for piece in gameState['pieces']:
+        if piece['captured'] == False:
+            if piece['color'] == 'light':
+                lightPieces.append(piece)
+            elif piece['color'] == 'dark':
+                darkPieces.append(piece)
+
+    # If each player has only 1 piece, that piece must be a King, and the game is a draw.
+    if len(darkPieces) == 1 and len(lightPieces) == 1:
+        return True
+    
+    # King vs King & Bishop or King vs King & Knight
+    elif len(darkPieces) == 2 and len(lightPieces) == 1:
+        for piece in darkPieces:
+            if piece['type'] == 'bishop' or piece['type'] == 'knight':
+                return True
+            
+    # King vs King & Bishop or King vs King & Knight            
+    elif len(darkPieces) == 1 and len(lightPieces) == 2:
+        for piece in lightPieces:
+            if piece['type'] == 'bishop' or piece['type'] == 'knight':
+                return True
+            
+    # King & Bishop vs King & Bishop
+    elif len(darkPieces) == 2 and len(lightPieces) == 2:
+        darkBishop = None
+        lightBishop = None
+
+        for piece in darkPieces:
+            if piece['type'] == 'bishop':
+                darkBishop = piece
+                break
+
+        if darkBishop:
+            for piece in lightPieces:
+                if piece['type'] == 'bishop':
+                    lightBishop = piece
+                    break
+
+        # Add the rank and file together; if the number is even the piece occupies a light square, otherwise it's a dark square.
+        # If both bishops occupy the same color spaces, there is insufficient material for a checkmate.
+        if darkBishop and lightBishop:
+            if (lightBishop['rank'] + lightBishop['file']) % 2 == (darkBishop['rank'] + darkBishop['file']) % 2:
+                return True
+
+    else:
+        return False
+        
 
 # Checks if a player is in check. Returns True if so, or False otherwise.
 def isInCheck(gameState, color):

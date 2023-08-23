@@ -199,14 +199,25 @@ def submitMove(request):
         return JsonResponse({'error':'invalid request method'}, status=405)
 
 
-# Executes once at the start of each turn; checks if the player has any possible moves. If no; the game is over. If the player is in check, it's a checkmate, if not, it's a stalemate.
+# Executes once at the start of each turn; checks for any conditions that result in a draw or checkmate.
 def checkForWinCondition(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         gameState = data.get('state')
         color = data.get('color')
 
-        if chessEngine.countValidMoves(gameState,color) == 0:
+        # Checks if there are too few pieces to perform a checkmate.
+        if chessEngine.checkForInsufficientMaterial(gameState):
+            activeGame = Game.objects.get(id=gameState['id'])
+            activeGame.isActive = False
+            activeGame.save()
+            return JsonResponse({'message':'draw'})
+
+        # Counts the legal moves the active player can make
+        validMoveCount = chessEngine.countValidMoves(gameState,color)
+
+        # If the player has no legal moves, the game ends in either a checkmate or a stalemate, depending on whether they're currently in check.
+        if validMoveCount == 0:
             if chessEngine.isInCheck(gameState,color):
                 activeGame = Game.objects.get(id=gameState['id'])
                 activeGame.isActive = False
@@ -218,6 +229,21 @@ def checkForWinCondition(request):
                 activeGame.isActive = False
                 activeGame.save()
                 return JsonResponse({'message':'stalemate'})
+        
+        # If validMoveCount is -1, that indicates that the King is the only piece that can move. The opposing players moves should then be counted.
+        # If the opposing player ALSO shows -1 moves, then the Kings are the only pieces that can move and the game ends in a draw.
+        elif validMoveCount == -1:
+            if color == 'light':
+                opposingMoveCount = chessEngine.countValidMoves(gameState,'dark')
+            elif color == 'dark':
+                opposingMoveCount = chessEngine.countValidMoves(gameState, 'light')
+
+            if opposingMoveCount == -1:
+                activeGame = Game.objects.get(id=gameState['id'])
+                activeGame.isActive = False
+                activeGame.save()
+                return JsonResponse({'message':'draw'})
+
         else:
             return JsonResponse({'message':'no win'})
     else:

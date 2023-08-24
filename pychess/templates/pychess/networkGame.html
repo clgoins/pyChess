@@ -7,16 +7,405 @@ Play Chess!
 
 
 {% block body %}
-    {% if newGame == True %}
-        <div>
-            Starting a new game! <br>Your Room Code is <strong>{{ roomCode }}</strong><br> Share this with your friend to let them join!
+        <div class="centeredContent">
+            <div class="main">
+                <div class="game">
+                    <div class="boardContainer" id="boardContainer">
+
+                    </div>
+                </div>
+                <div class="info">
+                    <div class="infoTop">
+                        <h2 id="status">
+                            <strong id="player"></strong><span id="toMove">Waiting for player</span>
+                        </h2>
+                    </div>
+                    <div class="infoBottom" id="moveList">
+                        <div class="move" style="height:50px;">Your room code is {{ roomCode }}<br>Send it to your friend to let them join!</div>
+                    </div>
+                </div>
+            </div>
         </div>
-    {% else %}
-        Please enter the Room Code you'd like to join:
-        <form action="{% url 'networkGame' %}" method="POST">
-            <input name="roomCode" type="text" placeholder="Room Code">
-            <input type="submit" value="Join!">
-            {% csrf_token %}
-        </form>
-    {% endif %}
+
+
+
+
+    {% csrf_token %}
+
+
+    <script>
+        var gameState = {};
+        var checkingMove = false;
+        var activePiece = null;
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        var gameID = "{{ gameID }}"
+        var updateTimer;
+
+
+        //Learned about this trick on Stack Overflow. Will allow me to disable all of the click handlers on the page with one line at the end of the game.
+        const killClickHandlers = new AbortController();
+
+        drawBoard();
+
+        //Get the initial board state. If there is no player 2; begin checking for updates. Otherwise start the game back up where it was left off.
+        let statePromise = getGameState();
+            statePromise.then((state) => {
+            gameState = state;
+
+            if (gameState['player2'] === "")
+                updateTimer = setInterval(checkForUpdates, 30000);
+            //else
+            //    startTurn();
+            });
+
+
+
+        //Checks the database for any changes made to the game; to see if the opposing player has joined or moved.
+        function checkForUpdates()
+        {
+            
+            let statePromise = getGameState();
+            statePromise.then((state) => {
+            
+                // At the start of the game, this should check if a second player has joined; and start the game if so.
+                if(gameState['player2'] === "" && state['player2'] != "")
+                {
+                    //startTurn();
+                    gameState = state;
+                }
+
+                //If a change was detected, update the gameState and start a new turn,
+                if(gameState != state)
+                {
+                    gameState = state;
+
+                }
+                
+            });
+        }
+
+
+        //Once a second player has joined the game; this will create the fresh board state and draw the pieces.
+        function startTurn()
+        {
+            //If it's the logged in users turn; stop polling for updates. Otherwise, resume polling for updates.
+            if((gameState['turnNumber'] % 2 == 0 && gameState['player1'] == "{{ request.user }}") || (gameState['turnNumber'] % 2 == 1 && gameState['player2'] == "{{ request.user }}"))
+                clearInterval(updateTimer);
+            else
+            {
+                updateTimer = setInterval(checkForUpdates, 30000);
+                checkForUpdates();
+            }
+
+            document.querySelector("#toMove").innerHTML = " to move"
+
+            //Generate the current game state, then draw the board and the pieces on it.
+            let statePromise = getGameState();
+            statePromise.then((state) => {
+            gameState = state;
+
+            //Update the status message with whose turn it is
+            if(gameState['turnNumber'] % 2 == 0)
+                document.querySelector("#player").innerHTML = 'Light';
+            else
+                document.querySelector("#player").innerHTML = 'Dark';
+
+            drawBoard();
+            drawPieces();
+            updateMoveList(state);
+            checkWinCondition();
+            });
+        }
+
+
+        //returns a promise that will contain a JSON object with the current game state once fulfilled
+        async function getGameState()
+        {
+            const response = await fetch(`/gameState?gameID=${gameID}`);
+            const state = await response.json();
+            return state;
+        }
+
+
+        //Gets a list of moves associated with the current game and displays them in the info panel to the right of the board
+        function updateMoveList()
+        {
+            fetch("{% url 'moveList' %}", {
+                method:'POST',
+                headers: {'X-CSRFToken':csrftoken},
+                mode: 'same-origin',
+                body: JSON.stringify({state:gameState})
+            })
+            .then(response => response.json())
+            .then(rawMoveList => {
+
+                let moveListPanel = document.querySelector("#moveList");
+                moveListPanel.innerHTML = "";
+                let moveList = rawMoveList['moveList'];
+                let pieces = gameState['pieces'];
+
+                for (let i = 0 ; i < moveList.length; i++)
+                {
+                    let moveCard = document.createElement('div');
+                    let move = moveList[i];
+                    moveCard.className = 'move';
+                    moveCard.innerHTML = `${move['turn']}: ${gameState['pieces'][move['pieceID']]['color']} ${gameState['pieces'][move['pieceID']]['type']} to ${move['position']}`;
+                    moveListPanel.prepend(moveCard);
+                }
+
+            })
+        }
+
+
+        //renders the checkerboard pattern on the screen, in the form of an HTML table
+        function drawBoard()
+        {
+            let board = document.createElement("table");
+            board.className = "board";
+            let isLight=true;
+
+            //Couple of nested for loops to draw an 8x8 grid of cells, alternating light and dark
+            for (let i = 0; i < 8; i++)
+            {
+                let row = document.createElement("tr");
+                row.className = "boardRow";
+
+                for (let j = 0; j < 8; j++)
+                {
+                    let cell = document.createElement("td");
+
+                    //HTML ID's cannot start with a number for some reason, so the id is prefixed with a 'p'
+                    cell.id = `p${j}_${i}`;
+
+                    //Picks the background color for the cell
+                    if(isLight)
+                        cell.className = "lightCell";
+                    else
+                        cell.className = "darkCell";
+
+                    //Once the size and color of the cell has been created, add a click handler to it
+                    cell.addEventListener('click', (event) => clickCell(event, cell.id), {signal:killClickHandlers.signal});
+
+                    row.append(cell);
+                    isLight = !isLight;
+ 
+                }
+                board.append(row);
+                isLight = !isLight;
+            }
+
+            //Clear off the existing board before redrawing it
+            document.querySelector('#boardContainer').innerHTML = '';
+            document.querySelector('#boardContainer').append(board);
+        }
+
+
+        //reads each piece position from the gameState, and adds <img> tags with click handlers to represent each piece to the board
+        function drawPieces()
+        {
+            //grab an array of pieces from the gameState object to iterate through
+            pieces = gameState['pieces']
+
+            for(let i = 0; i < pieces.length; i++)
+            {
+                //only draw a piece if it has not been captured
+                if(!pieces[i]['captured'])
+                {
+                    //create an image tag for each piece
+                    const image = document.createElement("img");
+                    image.src=`/static/pychess/images/${pieces[i]['type']}_${pieces[i]['color']}.png`
+                    
+                    //when the piece is clicked, call clickPiece() and pass in i as the id number
+                    image.addEventListener('click', () => clickPiece(i), {signal:killClickHandlers.signal});
+
+                    //find the correct space to place it, and append the image file
+                    document.querySelector(`#p${pieces[i]['rank']}_${pieces[i]['file']}`).append(image);
+                }
+            }
+        }
+
+
+        //click handler for an empty cell
+        function clickCell(event, cellID)
+        {
+
+            //These two variables are set in the clickPiece function.
+            //This function will do nothing unless a piece has been clicked and its valid moves are being displayed to the player.
+            if (checkingMove === true && activePiece != null)
+            {
+
+                //If a cell is clicked, the player has committed to a move and is no longer "checking" moves
+                checkingMove = false;
+
+                // cellID will be a string 'pX_Y' where X and Y are the cells coordinates. The 'p' is there because an HTML id has to start with a letter for some reason. (p = position)
+                let posX = parseInt(cellID[1]);
+                let posY = parseInt(cellID[3]);
+
+                // Fetch submitMove, passing the piece, position, and gameID as POST parameters
+                // Note that submitMove wants the gameID and NOT the gameState. The state will be recreated on the backend to ensure the move is valid 
+                // in the event that the request is modified in some way. (To prevent cheating)
+                fetch("{% url 'submitMove' %}", {
+                    method:'POST',
+                    headers: {'X-CSRFToken':csrftoken},
+                    mode: 'same-origin',
+                    body: JSON.stringify({
+                        piece:activePiece,
+                        rank:posX,
+                        file:posY,
+                        game:parseInt(gameID)
+                    })
+                })
+                .then(response => response.json())
+                .then(result =>         {
+                    
+                    // Get the new gameState, since it has potentially been modified on the backend after the previous fetch
+                    let statePromise = getGameState();
+                    statePromise.then((state) => {
+                    gameState = state;
+
+                    //If the move was submitted successfully, the turn is complete and a few things are set up for the start of the next turn.
+                    if(result['message'] === "success")
+                    {
+                        //Figure out whose turn it is and display it on the screen
+                        let turn = ''
+                        if (gameState['turnNumber'] % 2 == 0)
+                        {
+                            turn = 'light'
+                            document.querySelector("#player").innerHTML = "Light ";
+                        }
+                        else
+                        {
+                            turn = 'dark'
+                            document.querySelector("#player").innerHTML = "Dark";
+                        }
+
+                        //Check for a checkmate or stalemate, and update the status message accordingly.
+                        checkWinCondition();
+                    }
+
+                    //Move on to the next turn
+                    //startTurn();
+
+                    });
+                });
+            }
+        }
+
+
+        //click handler for any of the pieces on the board
+        function clickPiece( pieceID)
+        {
+
+            // Don't allow action if it isn't the logged in users turn
+            if((gameState['turnNumber'] % 2 == 0 && gameState['player1'] == "{{ request.user }}") || (gameState['turnNumber'] % 2 == 1 && gameState['player2'] == "{{ request.user }}"))
+            {
+
+                //Make sure there isn't already a piece selected
+                if (checkingMove === false)
+                {
+                    //this line prevents the clickCell() handler from firing at the same time as clickPiece()
+                    event.stopPropagation();
+
+                    // grab the specific piece from the gameState so there aren't so many brackets in the next if statement
+                    let piece = gameState['pieces'][pieceID];
+
+                    // Makes sure that if it's Light to move, that clicks only register on light pieces, or only on dark pieces if it's Dark to move
+                    if((gameState['turnNumber'] % 2 === 0 && piece['color'] === 'light') || (gameState['turnNumber'] % 2 === 1 && piece['color'] === 'dark'))
+                    {
+                        //These two variables will be checked in the clickCell function once a desired move is selected.
+                        checkingMove = true
+                        activePiece = piece;
+
+                        //Highlights the cell the selected piece sits on.
+                        cellToHighlight = document.querySelector(`#p${piece['rank']}_${piece['file']}`);
+                        cellToHighlight.style.backgroundColor = 'aliceBlue';
+
+                        //Passes the piece ID off to do the actual checking.
+                        checkMoves(piece['id']);
+                    }
+                }
+
+            }
+        }
+
+
+        //makes a call to the backend to get a list of valid coordinates a piece can move to, and then colors those squares green
+        function checkMoves(pieceID)
+        {
+            fetch("{% url 'checkMoves' %}", {
+                method:'POST',
+                headers: {'X-CSRFToken':csrftoken},
+                mode: 'same-origin',
+                body: JSON.stringify({
+                    state:gameState,
+                    pieceID:pieceID
+                })
+            })
+            .then(response => response.json())
+            .then(moveList => {
+
+                //The chess engine will spit out a list of possible spaces the piece can move; this will highlight the legal moves in green.
+                moveList['validMoves'].forEach((move) => {
+                    cellToHighlight = document.querySelector(`#p${move[0]}_${move[1]}`);
+                    cellToHighlight.style.backgroundColor = 'springGreen';
+                })
+            })
+        }
+
+
+        //at the start of every turn; check to see if a win or stalemate condition has been reached
+        function checkWinCondition()
+        {
+
+            //determine whose turn it is
+            let playerTurn;
+            if (gameState['turnNumber'] % 2 == 0)
+                playerTurn = 'light';
+            else
+                playerTurn = 'dark';
+
+            //make a call to the chess engine to do the actual checking
+            fetch("{% url 'checkForWinCondition' %}", {
+                            method:'POST',
+                            headers: {'X-CSRFToken':csrftoken},
+                            mode: 'same-origin',
+                            body: JSON.stringify({
+                            state:gameState,
+                            color:playerTurn           
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(winCondition => {
+
+                            //If a checkmate has been achieved; update the status message and disable all the click event handlers.
+                            if (winCondition['message'] === "checkmate")
+                            {
+                                let winner = "";
+                                if (turn === 'light')
+                                    winner = "Dark";
+                                else
+                                    winner = 'Light';
+
+                                document.querySelector("#status").innerHTML = `${winner} wins by checkmate`
+                                console.log("killing event handlers");
+                                killClickHandlers.abort();
+                            }
+
+                            //Do the same for a stalemate or for a draw.
+                            else if (winCondition['message'] === "stalemate")
+                            {
+                                document.querySelector("#status").innerHTML = "Game ends in a stalemate"
+                                console.log("killing event handlers");
+                                killClickHandlers.abort();
+                            }
+                            else if (winCondition['message'] === "draw")
+                            {
+                                document.querySelector("#status").innerHTML = "Game ends in a draw"
+                                console.log("killing event handlers");
+                                killClickHandlers.abort();
+                            }
+                        })
+        }
+
+    </script>
 {% endblock %}

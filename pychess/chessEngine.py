@@ -9,7 +9,12 @@ def createNewBoard(game):
     boardState['id'] = game.id
     boardState['roomCode'] = game.roomCode
     boardState['player1'] = game.player1.username
-    boardState['player2'] = game.player2.username
+
+    if game.player2 == None:
+        boardState['player2'] = ""
+    else:
+        boardState['player2'] = game.player2.username
+        
     boardState['turnNumber'] = 0
     
     # Final entry will be a list of 32 smaller dictionaries describing each piece on the board

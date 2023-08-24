@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect
 import json
+from django.forms.models import model_to_dict
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
 from .models import *
@@ -9,8 +10,11 @@ from . import chessEngine
 import string, random
 
 def index(request):
-    localGames = Game.objects.filter(player1 = request.user, player2 = request.user)
-    return render(request, 'pychess/index.html', {'localGames':localGames})
+    if request.user.is_authenticated:
+        localGames = Game.objects.filter(player1 = request.user, player2 = request.user)
+        return render(request, 'pychess/index.html', {'localGames':localGames})
+    else:
+        return render(request, 'pychess/index.html')
 
 
 def loginView(request):
@@ -88,26 +92,39 @@ def localGame(request):
 
 
 def networkGame(request):
-    if request.method == 'GET':
-        if request.GET['g'] == 'new':
-            # Create and render a new game, along with a message to the user containing their room code to share with their friend
+    if request.method == "GET":
+        room = request.GET.get('room')
 
-            roomCode = generateNewRoomCode()
-
-            newGame = Game(roomCode=roomCode, player1=request.user, isActive=True)
+        # If room == none, it's a new game. Generate a room code, create a game entry, and redirect to the newly created game
+        if room == None:
+            # generate a new room code and attempt to create a new game entry in the DB
+            newRoomCode = generateNewRoomCode()
+            newGame = Game(roomCode = newRoomCode, player1=request.user, isActive=True)
             newGame.save()
+            response = redirect('networkGame')
+            response['Location'] += f'?room={newRoomCode}'
+            return response
+        
+        # If there's a room code in the GET data, this is an already existing game. 
+        else:
+            # get the game data from the DB
+            game = Game.objects.get(roomCode = room)
 
-            return render(request, 'pychess/networkGame.html', {'newGame':True, 'roomCode':roomCode})
-        
-        elif request.GET['g'] == 'join':
-            # Should render a form to prompt the user for a room code to join
-            return render(request, 'pychess/networkGame.html', {'newGame':False})
-        
-    elif request.method == 'POST':
-        # this is where the room code should be submitted in the event that the user is joining an existing game
-        pass
-    else:
-        return redirect(index)
+            # If the user is listed as either player1 or player2 already; just render the game.
+            if game.player1 == request.user or game.player2 == request.user:
+                return render(request, 'pychess/networkGame.html', {'gameID':game.id, 'roomCode':room})
+            
+            # If the user is NOT listed as a player already, but there is no player 2 listed; make the user player2, update the game entry, and render the game.
+            elif game.player2 == None:
+                print("made it to this block")
+                game.player2 = request.user
+                game.save()
+                return render(request, 'pychess/networkGame.html', {'gameID':game.id, 'roomCode':room})
+            
+            # TODO: If the user is not listed as a player, and the game is full already; redirect to the spectate page to join game as a spectator.
+            else:
+                redirect(play)
+
 
 
 def review(request):

@@ -71,6 +71,7 @@ Play Chess!
         }
 
 
+        //Gets a list of moves associated with the current game and displays them in the info panel to the right of the board
         function updateMoveList(state)
         {
             fetch("{% url 'moveList' %}", {
@@ -98,6 +99,7 @@ Play Chess!
 
             })
         }
+
 
         //renders the checkerboard pattern on the screen, in the form of an HTML table
         function drawBoard()
@@ -236,7 +238,7 @@ Play Chess!
 
 
         //click handler for any of the pieces on the board
-        function clickPiece(event, pieceID)
+        function clickPiece(pieceID)
         {
 
             //Make sure there isn't already a piece selected

@@ -260,6 +260,8 @@ def checkForWinCondition(request):
                 activeGame.isActive = False
                 activeGame.save()
                 return JsonResponse({'message':'draw'})
+            else:
+                return JsonResponse({'message':'no win'})
 
         else:
             return JsonResponse({'message':'no win'})

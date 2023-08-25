@@ -54,8 +54,8 @@ Play Chess!
 
             if (gameState['player2'] === "")
                 updateTimer = setInterval(checkForUpdates, 30000);
-            //else
-            //    startTurn();
+            else
+                startGame();
             });
 
 
@@ -63,22 +63,24 @@ Play Chess!
         //Checks the database for any changes made to the game; to see if the opposing player has joined or moved.
         function checkForUpdates()
         {
-            
             let statePromise = getGameState();
             statePromise.then((state) => {
             
                 // At the start of the game, this should check if a second player has joined; and start the game if so.
                 if(gameState['player2'] === "" && state['player2'] != "")
                 {
-                    //startTurn();
                     gameState = state;
                 }
 
-                //If a change was detected, update the gameState and start a new turn,
-                if(gameState != state)
+                //If a change was detected, update the gameState, draw the new board, and stop polling for updates.
+                else if(gameState['player2'] != "" && JSON.stringify(gameState) != JSON.stringify(state))
                 {
                     gameState = state;
-
+                    drawBoard();
+                    drawPieces();
+                    updateStatus();
+                    updateMoveList(state);
+                    clearInterval(updateTimer);
                 }
                 
             });
@@ -86,7 +88,7 @@ Play Chess!
 
 
         //Once a second player has joined the game; this will create the fresh board state and draw the pieces.
-        function startTurn()
+        function startGame()
         {
             //If it's the logged in users turn; stop polling for updates. Otherwise, resume polling for updates.
             if((gameState['turnNumber'] % 2 == 0 && gameState['player1'] == "{{ request.user }}") || (gameState['turnNumber'] % 2 == 1 && gameState['player2'] == "{{ request.user }}"))
@@ -94,7 +96,6 @@ Play Chess!
             else
             {
                 updateTimer = setInterval(checkForUpdates, 30000);
-                checkForUpdates();
             }
 
             document.querySelector("#toMove").innerHTML = " to move"
@@ -104,16 +105,12 @@ Play Chess!
             statePromise.then((state) => {
             gameState = state;
 
-            //Update the status message with whose turn it is
-            if(gameState['turnNumber'] % 2 == 0)
-                document.querySelector("#player").innerHTML = 'Light';
-            else
-                document.querySelector("#player").innerHTML = 'Dark';
-
             drawBoard();
             drawPieces();
             updateMoveList(state);
+            updateStatus();
             checkWinCondition();
+
             });
         }
 
@@ -154,6 +151,16 @@ Play Chess!
                 }
 
             })
+        }
+
+        
+        //Update the status message to display whose turn it is.
+        function updateStatus()
+        {
+            if(gameState['turnNumber'] % 2 == 0)
+                document.querySelector("#player").innerHTML = 'Light';
+            else
+                document.querySelector("#player").innerHTML = 'Dark';
         }
 
 
@@ -283,8 +290,11 @@ Play Chess!
                         checkWinCondition();
                     }
 
-                    //Move on to the next turn
-                    //startTurn();
+                    drawBoard();
+                    drawPieces();
+                    updateMoveList(state);
+                    updateStatus();
+                    updateTimer = setInterval(checkForUpdates, 30000);
 
                     });
                 });
@@ -381,31 +391,80 @@ Play Chess!
                             if (winCondition['message'] === "checkmate")
                             {
                                 let winner = "";
-                                if (turn === 'light')
+                                if (playerTurn === 'light')
                                     winner = "Dark";
                                 else
                                     winner = 'Light';
 
                                 document.querySelector("#status").innerHTML = `${winner} wins by checkmate`
-                                console.log("killing event handlers");
                                 killClickHandlers.abort();
+
+                                if("{{ request.user }}" == gameState['player1'] && winner == "Light")
+                                    endGameAnimation("win");
+                                else if("{{ request.user }}" == gameState['player2'] && winner == "Dark")
+                                    endGameAnimation("win");
+                                else
+                                    endGameAnimation("lose");
+
+                                clearInterval(updateTimer);
                             }
 
                             //Do the same for a stalemate or for a draw.
                             else if (winCondition['message'] === "stalemate")
                             {
                                 document.querySelector("#status").innerHTML = "Game ends in a stalemate"
-                                console.log("killing event handlers");
                                 killClickHandlers.abort();
+                                endGameAnimation("draw");
+                                clearInterval(updateTimer);
                             }
                             else if (winCondition['message'] === "draw")
                             {
                                 document.querySelector("#status").innerHTML = "Game ends in a draw"
-                                console.log("killing event handlers");
                                 killClickHandlers.abort();
+                                endGameAnimation("draw");
+                                clearInterval(updateTimer);
                             }
                         })
         }
 
+
+        //Do a little animation on the board to make it SUPER obvious the game is over
+        async function endGameAnimation(outcome)
+        {
+            
+            let tableCells = document.querySelectorAll("td");
+            let boardColor;
+
+            if (outcome == "win")
+            {
+                boardColor = "springgreen";
+                document.querySelector(".infoTop").style.backgroundColor = "springgreen";
+                document.querySelector(".infoTop").style.color = "rgb(31, 27, 82)";
+            }
+            else if (outcome == "lose")
+            {
+                boardColor = "darkred";
+                document.querySelector(".infoTop").style.backgroundColor = "darkred";
+                document.querySelector(".infoTop").style.color = "aliceblue";
+            }
+            else if (outcome == "draw")
+            {
+                boardColor = "darkcyan";
+                document.querySelector(".infoTop").style.backgroundColor = "darkcyan";
+                document.querySelector(".infoTop").style.color = "rgb(31, 27, 82)";
+            }
+
+
+            for (let i = 0; i < tableCells.length; i++)
+            {
+                tableCells[i].style.backgroundColor = boardColor;
+                await sleep(50);
+            }
+        }
+
+        function sleep(ms)
+        {
+            return new Promise(resolve => setTimeout(resolve,ms));
+        }
     </script>
 {% endblock %}

@@ -328,6 +328,7 @@ Play Chess!
 
                                 document.querySelector("#status").innerHTML = `${winner} wins by checkmate`
                                 killClickHandlers.abort();
+                                endGameAnimation()
                             }
 
                             //Do the same for a stalemate or for a draw.
@@ -335,14 +336,40 @@ Play Chess!
                             {
                                 document.querySelector("#status").innerHTML = "Game ends in a stalemate"
                                 killClickHandlers.abort();
+                                endGameAnimation()
                             }
                             else if (winCondition['message'] === "draw")
                             {
                                 document.querySelector("#status").innerHTML = "Game ends in a draw"
                                 killClickHandlers.abort();
+                                endGameAnimation()
                             }
                         })
         }
 
+
+        //Do a little animation on the board to make it SUPER obvious the game is over
+        async function endGameAnimation()
+        {
+            
+            let tableCells = document.querySelectorAll("td");
+            let boardColor;
+
+            boardColor = "darkcyan";
+            document.querySelector(".infoTop").style.backgroundColor = "darkcyan";
+            document.querySelector(".infoTop").style.color = "rgb(31, 27, 82)";
+
+
+            for (let i = 0; i < tableCells.length; i++)
+            {
+                tableCells[i].style.backgroundColor = boardColor;
+                await sleep(50);
+            }
+        }
+
+        function sleep(ms)
+        {
+            return new Promise(resolve => setTimeout(resolve,ms));
+        }
     </script>
 {% endblock %}

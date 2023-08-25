@@ -293,11 +293,11 @@ def countValidMoves(gameState, color):
     # If both players moves are counted and return -1; the game ends in a stalemate.
     if moveCount == 0:
         if color == 'light':
-            moveList = checkPieceMoves(gameState, pieces[28])
+            moveList = checkPieceMoves(gameState, 28)
         elif color == 'dark':
-            moveList = checkPieceMoves(gameState, pieces[4])
+            moveList = checkPieceMoves(gameState, 4)
 
-        if len(moveList['validMoves'] > 0):
+        if len(moveList['validMoves']) > 0:
             return -1
 
     return moveCount

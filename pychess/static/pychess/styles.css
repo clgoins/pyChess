@@ -164,7 +164,36 @@ img {
     color: aliceblue;
 }
 
-.infoBottom {
+.infoMid {
+    display:flex;
+    flex-basis:auto;
+    flex-grow:0;
+    flex-direction: column;
+    height:10%;
+    width:100%;
+    justify-content:center;
+    align-items: center;
+    border:solid;
+    border-radius: 12px;
+    border-color: aliceblue;
+    color: aliceblue;
+    font-weight: bold;
+}
+
+.infoBottomNetwork {
+    display:flex;
+    flex-direction:column;
+    flex-basis:75%;
+    flex-shrink:0;
+    width:100%;
+    border:solid;
+    border-radius: 12px;
+    border-color: aliceblue;
+    color: aliceblue;
+    overflow:auto;
+}
+
+.infoBottomLocal {
     display:flex;
     flex-direction:column;
     flex-basis:85%;

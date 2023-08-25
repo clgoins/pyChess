@@ -17,10 +17,15 @@ Play Chess!
                 <div class="info">
                     <div class="infoTop">
                         <h2 id="status">
-                            <strong id="player"></strong><span id="toMove">Waiting for player</span>
+                            Waiting for player
                         </h2>
                     </div>
-                    <div class="infoBottom" id="moveList">
+                    <div class="infoMid">
+                        <div>Playing as <span id=color></span></div>
+                        <div>Playing against: <span id=opponent></span></div>
+                        <div>Room code: {{ roomCode }}</div>
+                    </div>
+                    <div class="infoBottomNetwork" id="moveList">
                         <div class="move" style="height:50px;">Your room code is {{ roomCode }}<br>Send it to your friend to let them join!</div>
                     </div>
                 </div>
@@ -40,11 +45,13 @@ Play Chess!
         const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         var gameID = "{{ gameID }}"
         var updateTimer;
+        var username = "{{ request.user }}"
 
 
         //Learned about this trick on Stack Overflow. Will allow me to disable all of the click handlers on the page with one line at the end of the game.
         const killClickHandlers = new AbortController();
 
+        //Draw the checkerboard pattern on the screen
         drawBoard();
 
         //Get the initial board state. If there is no player 2; begin checking for updates. Otherwise start the game back up where it was left off.
@@ -52,8 +59,16 @@ Play Chess!
             statePromise.then((state) => {
             gameState = state;
 
+            //Updates some info to display which color the user is playing as
+            if("{{ request.user }}" == gameState['player1'])
+                document.querySelector('#color').innerHTML = "LIGHT";
+            else if ("{{ request.user }}" == gameState['player2'])
+                document.querySelector('#color').innerHTML = "DARK";
+
+
+            //Checks if a second player has joined yet. Begin polling for updates if not; or start the game if so.
             if (gameState['player2'] === "")
-                updateTimer = setInterval(checkForUpdates, 30000);
+                updateTimer = setInterval(checkForUpdates, 15000);
             else
                 startGame();
             });
@@ -70,6 +85,7 @@ Play Chess!
                 if(gameState['player2'] === "" && state['player2'] != "")
                 {
                     gameState = state;
+                    startGame();
                 }
 
                 //If a change was detected, update the gameState, draw the new board, and stop polling for updates.
@@ -87,23 +103,33 @@ Play Chess!
         }
 
 
-        //Once a second player has joined the game; this will create the fresh board state and draw the pieces.
+        //Begins the game. Will start a new game; or picks up where the game left off if this is one that's already in progress.
         function startGame()
         {
-            //If it's the logged in users turn; stop polling for updates. Otherwise, resume polling for updates.
+
+            //If it's the logged in users turn; stop polling for updates. Otherwise, start polling for updates.
+            //Player 1 is always light, player 2 is always dark. If the turnNumber is even, it's player 1's turn, otherwise it's player 2's.
             if((gameState['turnNumber'] % 2 == 0 && gameState['player1'] == "{{ request.user }}") || (gameState['turnNumber'] % 2 == 1 && gameState['player2'] == "{{ request.user }}"))
                 clearInterval(updateTimer);
             else
             {
-                updateTimer = setInterval(checkForUpdates, 30000);
+                updateTimer = setInterval(checkForUpdates, 15000);
             }
 
-            document.querySelector("#toMove").innerHTML = " to move"
+            document.querySelector("#status").innerHTML = "Found player"
 
             //Generate the current game state, then draw the board and the pieces on it.
             let statePromise = getGameState();
             statePromise.then((state) => {
             gameState = state;
+
+            //By this point there is definitely a second player; so update the info to display the username of your opponent
+            if ("{{ request.user }}" == gameState['player1'])
+                document.querySelector("#opponent").innerHTML = gameState['player2'];
+            else if ("{{ request.user}}" == gameState['player2'])
+                document.querySelector("#opponent").innerHTML = gameState['player1'];
+            
+
 
             drawBoard();
             drawPieces();
@@ -158,9 +184,9 @@ Play Chess!
         function updateStatus()
         {
             if(gameState['turnNumber'] % 2 == 0)
-                document.querySelector("#player").innerHTML = 'Light';
+                document.querySelector("#status").innerHTML = 'Light to move';
             else
-                document.querySelector("#player").innerHTML = 'Dark';
+                document.querySelector("#status").innerHTML = 'Dark to move';
         }
 
 
@@ -172,40 +198,77 @@ Play Chess!
             let isLight=true;
 
             //Couple of nested for loops to draw an 8x8 grid of cells, alternating light and dark
-            for (let i = 0; i < 8; i++)
-            {
-                let row = document.createElement("tr");
-                row.className = "boardRow";
-
-                for (let j = 0; j < 8; j++)
+            if (gameState['player1'] == null || gameState['player1'] == "{{ request.user }}")
+                for (let i = 0; i < 8; i++)
                 {
-                    let cell = document.createElement("td");
+                    let row = document.createElement("tr");
+                    row.className = "boardRow";
 
-                    //HTML ID's cannot start with a number for some reason, so the id is prefixed with a 'p'
-                    cell.id = `p${j}_${i}`;
+                    for (let j = 0; j < 8; j++)
+                    {
+                        let cell = document.createElement("td");
 
-                    //Picks the background color for the cell
-                    if(isLight)
-                        cell.className = "lightCell";
-                    else
-                        cell.className = "darkCell";
+                        //HTML ID's cannot start with a number for some reason, so the id is prefixed with a 'p'
+                        cell.id = `p${j}_${i}`;
 
-                    //Once the size and color of the cell has been created, add a click handler to it
-                    cell.addEventListener('click', (event) => clickCell(event, cell.id), {signal:killClickHandlers.signal});
+                        //Picks the background color for the cell
+                        if(isLight)
+                            cell.className = "lightCell";
+                        else
+                            cell.className = "darkCell";
 
-                    row.append(cell);
+                        //Once the size and color of the cell has been created, add a click handler to it
+                        cell.addEventListener('click', (event) => clickCell(event, cell.id), {signal:killClickHandlers.signal});
+
+                        row.append(cell);
+                        isLight = !isLight;
+    
+                    }
+                    board.append(row);
                     isLight = !isLight;
- 
                 }
-                board.append(row);
-                isLight = !isLight;
+        
+
+            //Same thing; but if the user is playing as Dark, number the board upside down and backwards so the dark pieces are on the bottom
+            else if("{{ request.user }}" == gameState['player2'])
+            {
+                for (let i = 7; i >= 0; i--)
+                {
+                    let row = document.createElement("tr");
+                    row.className = "boardRow";
+
+                    for (let j = 7; j >= 0; j--)
+                    {
+                        let cell = document.createElement("td");
+
+                        //HTML ID's cannot start with a number for some reason, so the id is prefixed with a 'p'
+                        cell.id = `p${j}_${i}`;
+
+                        //Picks the background color for the cell
+                        if(isLight)
+                            cell.className = "lightCell";
+                        else
+                            cell.className = "darkCell";
+
+                        //Once the size and color of the cell has been created, add a click handler to it
+                        cell.addEventListener('click', (event) => clickCell(event, cell.id), {signal:killClickHandlers.signal});
+
+                        row.append(cell);
+                        isLight = !isLight;
+    
+                    }
+                    board.append(row);
+                    isLight = !isLight;
+                }
+
             }
+
 
             //Clear off the existing board before redrawing it
             document.querySelector('#boardContainer').innerHTML = '';
             document.querySelector('#boardContainer').append(board);
+         
         }
-
 
         //reads each piece position from the gameState, and adds <img> tags with click handlers to represent each piece to the board
         function drawPieces()
@@ -273,19 +336,6 @@ Play Chess!
                     //If the move was submitted successfully, the turn is complete and a few things are set up for the start of the next turn.
                     if(result['message'] === "success")
                     {
-                        //Figure out whose turn it is and display it on the screen
-                        let turn = ''
-                        if (gameState['turnNumber'] % 2 == 0)
-                        {
-                            turn = 'light'
-                            document.querySelector("#player").innerHTML = "Light ";
-                        }
-                        else
-                        {
-                            turn = 'dark'
-                            document.querySelector("#player").innerHTML = "Dark";
-                        }
-
                         //Check for a checkmate or stalemate, and update the status message accordingly.
                         checkWinCondition();
                     }
@@ -294,7 +344,7 @@ Play Chess!
                     drawPieces();
                     updateMoveList(state);
                     updateStatus();
-                    updateTimer = setInterval(checkForUpdates, 30000);
+                    updateTimer = setInterval(checkForUpdates, 15000);
 
                     });
                 });
@@ -462,6 +512,8 @@ Play Chess!
             }
         }
 
+
+        //Custom sleep function for the end game animation
         function sleep(ms)
         {
             return new Promise(resolve => setTimeout(resolve,ms));

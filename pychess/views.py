@@ -70,7 +70,10 @@ def register(request):
     
 
 def play(request):
-    return render(request, 'pychess/play.html')
+    if request.method == "GET":
+        return render(request, 'pychess/play.html')
+    else:
+        pass
 
 
 def localGame(request):
@@ -124,7 +127,8 @@ def networkGame(request):
             # TODO: If the user is not listed as a player, and the game is full already; redirect to the spectate page to join game as a spectator.
             else:
                 redirect(play)
-
+    else:
+        return JsonResponse({"message":"invalid request method"}, status=405)
 
 
 def review(request):

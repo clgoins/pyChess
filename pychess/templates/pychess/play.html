@@ -7,31 +7,58 @@ Play chess!
 
 
 {% block body %}
-    <div style="font-size: 20px;">
-        <div>
-            <a href="{% url 'localGame' %}">New Local Game</a>
+    
+    {% if message %}
+    <div id="error" style="background-color:indianred; color:rgb(149, 0, 0); padding:10px">
+        {{message}}
+    </div>
+    {% endif %}
+
+    <div class="centeredContent" style="flex-direction:column; font-size:36px;" id="main" style="font-size: 20px;">
+
+        <div id="links" style="display:block">
+            <div style="margin:15px;">
+                <a href="{% url 'localGame' %}">New Local Game</a>
+            </div>
+            <div style="margin:15px;">
+                <a href="{% url 'networkGame' %}">New Network Game</a>
+            </div>
+            <div style="margin:15px;">
+                <a href="#" id="join">Join Network Game</a>
+            </div>
         </div>
-        <div>
-            <a href="{% url 'networkGame' %}">New Network Game</a>
-        </div>
-        <div>
-            <a href="#" id="join">Join Network Game</a>
+        <div id="form" style="display:none; flex-direction: column; justify-content: center; align-items: center;">
+            Enter Room Code:
+            <form method="POST" style="margin-bottom: 15px;">
+                <input style="height: 36px; width:200px; text-align:center; font-size: 24px; font-weight: bold;" type="text" name="roomCode" maxlength="6" placeholder="Room Code">
+                <input style="height: 36px" type="submit" value="Join Game">
+                {% csrf_token %}
+            </form>
+            <button id="back">Back</button>
         </div>
     </div>
 
 
     <script>
-        document.querySelector("#new").addEventListener('click', newGame);
         document.querySelector("#join").addEventListener('click', joinGame);
-
-        function newGame()
-        {
-            window.alert("test 2");
-        }
+        document.querySelector("#back").addEventListener('click', back)
+        let errorMessage = document.querySelector("#error");
 
         function joinGame()
         {
-            window.alert("test 3");
+            document.querySelector("#links").style.display = "none";
+            document.querySelector("#form").style.display = "flex";
+
+            if(errorMessage != null)
+                errorMessage.style.display = "none";
         }
+
+        function back()
+        {
+            document.querySelector("#links").style.display = "block";
+            document.querySelector("#form").style.display = "none"; 
+        }
+
+
     </script>
 {% endblock %}

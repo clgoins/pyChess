@@ -12,7 +12,17 @@ import string, random
 def index(request):
     if request.user.is_authenticated:
         localGames = Game.objects.filter(player1 = request.user, player2 = request.user)
-        return render(request, 'pychess/index.html', {'localGames':localGames})
+        
+        networkGames = [] 
+        netGameQuery = Game.objects.filter(player1 = request.user).exclude(player2 = request.user)
+        for game in netGameQuery:
+            networkGames.append(game)
+        netGameQuery = Game.objects.filter(player2 = request.user).exclude(player1 = request.user)
+        for game in netGameQuery:
+            networkGames.append(game)
+
+        
+        return render(request, 'pychess/index.html', {'localGames':localGames, 'networkGames':networkGames})
     else:
         return render(request, 'pychess/index.html')
 
@@ -70,10 +80,35 @@ def register(request):
     
 
 def play(request):
+    
     if request.method == "GET":
         return render(request, 'pychess/play.html')
+    
+    # POST request will come from user submitting a room code on the play page
+    elif request.method == "POST":
+        # Get the request room code from POST data
+        roomCode = request.POST['roomCode']
+
+        # Check if a game exists with that code. If so, redirect to networkGame with that room code.
+        if Game.objects.filter(roomCode=roomCode).exists():
+            game = Game.objects.get(roomCode=roomCode)
+            
+            # If player1 == player2, the game is actually a local game. This Join form isn't really intended for rejoining local games, but there's no reason not to send the user to the right place.
+            if game.player1 != game.player2:
+                response = redirect('networkGame')
+                response['Location'] += f'?room={roomCode}'
+                return response
+            
+            else:
+                response = redirect('localGame')
+                response['Location'] += f'?room={roomCode}'
+                return response
+
+        # Otherwise, redirect back to the play page with an error message
+        else:
+            return render(request, 'pychess/play.html', {"message":"Game does not exist! Did you enter the room code correctly?"})
     else:
-        pass
+        return JsonResponse({"message":"invalid request method"}, status=405)
 
 
 def localGame(request):

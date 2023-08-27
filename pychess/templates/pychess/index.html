@@ -7,13 +7,51 @@ pyChess Home
 
 
 {% block body %}
-    {% if localGames %}
-        <Strong>Local Games: </Strong>
-        <br>
-        {% for game in localGames %}
-            <a href="{% url 'localGame' %}?room={{game.roomCode}}">{{ game }}</a><br>
-        {% endfor %}
+    <div class="centeredContent">
+    {% if localGames or networkGames %}
+        {% if localGames %}
+            <div style="display:flex; flex-direction: column;">
+                <Strong>Local Games: </Strong>
+                <br>
+                {% for game in localGames %}
+                    <a href="{% url 'localGame' %}?room={{game.roomCode}}">Room: {{ game.roomCode }}</a><br>
+                {% endfor %}
+            </div>
+
+            <br><br>
+        {% endif %}
+
+        {% if networkGames %}
+            <div style="display:flex; flex-direction: column;">
+            <Strong>Network Games: </Strong>
+            <table>
+            {% for game in networkGames %}
+                
+                <tr>
+                    <td style="padding-right: 15px;">
+                        <a href="{% url 'networkGame' %}?room={{game.roomCode}}">Room: {{ game.roomCode }}</a>
+                    </td>
+
+                    <td>
+                        {% if game.player2%}
+                            {% if request.user == game.player1 %}
+                                Playing Against: {{ game.player2 }}
+                            {% else %}
+                                Playing Against: {{ game.player1 }}
+                            {% endif %}
+                        {% else %}
+                            Waiting on player
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </table>
+            </div>
+        {% endif %}
+
+
     {% else %}
         No Active Games
     {% endif %}
+    </div>
 {% endblock %}

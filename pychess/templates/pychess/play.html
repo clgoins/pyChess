@@ -8,34 +8,45 @@ Play chess!
 
 {% block body %}
     
-    {% if message %}
-    <div id="error" style="background-color:indianred; color:rgb(149, 0, 0); padding:10px">
-        {{message}}
-    </div>
-    {% endif %}
 
-    <div class="centeredContent" style="flex-direction:column; font-size:36px;" id="main" style="font-size: 20px;">
+
+    <div class="centeredContent" style="align-items: start; font-size:36px;" id="main">
 
         <div id="links" style="display:block">
-            <div style="margin:15px;">
-                <a href="{% url 'localGame' %}">New Local Game</a>
-            </div>
-            <div style="margin:15px;">
-                <a href="{% url 'networkGame' %}">New Network Game</a>
-            </div>
-            <div style="margin:15px;">
-                <a href="#" id="join">Join Network Game</a>
+            <div style="display:flex; flex-direction: column; justify-content: center; align-items: center; margin-top:5%;">
+                <div>
+                    <h2>Start or Join a game</h2>
+                </div>
+                <div style="margin:15px;">
+                    <a href="{% url 'localGame' %}">New Local Game</a>
+                </div>
+                <div style="margin:15px;">
+                    <a href="{% url 'networkGame' %}">New Network Game</a>
+                </div>
+                <div style="margin:15px;">
+                    <a href="#" id="join">Join Network Game</a>
+                </div>
             </div>
         </div>
-        <div id="form" style="display:none; flex-direction: column; justify-content: center; align-items: center;">
-            Enter Room Code:
-            <form method="POST" style="margin-bottom: 15px;">
-                <input style="height: 36px; width:200px; text-align:center; font-size: 24px; font-weight: bold;" type="text" name="roomCode" maxlength="6" placeholder="Room Code">
-                <input style="height: 36px" type="submit" value="Join Game">
-                {% csrf_token %}
-            </form>
-            <button id="back">Back</button>
+        
+        <div id="form" style="display:none;">
+            <div style="display:flex; flex-direction: column; justify-content: center; align-items: center; margin-top:5%;">
+                
+                <div><h2>Enter Room Code:</h2></div>
+                <div>
+                    <form method="POST" style="display: grid; grid-template-rows: 2em; grid-template-columns: 1fr auto;">
+                        <input style="height:36px; width:200px; text-align:center; font-size:24px; font-weight: bold;" type="text" name="roomCode" maxlength="6" placeholder="ROOM CODE">
+                        <input style="height:40px; margin-left:10px" type="submit" value="Join Game">
+                        {% csrf_token %}
+                    </form>
+                </div>
+                <div>
+                    <button id="back" style="height:36px;">Go Back</button>
+                </div>
+            </div>
         </div>
+
+
     </div>
 
 

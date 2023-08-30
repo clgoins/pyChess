@@ -12,9 +12,9 @@ pyChess Login
         <div style="display:flex; flex-direction: column;">
 
             {% if message %}
-                <div style="color:white; background-color: red;">
-                    {{ message }}
-                </div>
+            <div class="errorMessage">
+                    <strong>{{ message }}</strong>
+            </div>
             {% endif %}
 
             <div>

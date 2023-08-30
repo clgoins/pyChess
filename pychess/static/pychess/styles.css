@@ -106,6 +106,15 @@ img {
     text-align:center;
 }
 
+.errorMessage {
+    color:red; 
+    background-color: rgb(255, 140, 140); 
+    padding:10px; 
+    border: solid; 
+    border-color:red; 
+    border-radius: 10px; 
+    text-align: center;
+}
 
 
 

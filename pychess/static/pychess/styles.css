@@ -16,6 +16,9 @@ img {
     height:75%;
 }
 
+
+/*===== Header, navbar, and footer =====*/
+
 .header {
     height:10vh;
     width:100%;
@@ -72,6 +75,10 @@ img {
     border-color:aliceblue;
 }
 
+
+
+/*===== Main Content Divs =====*/
+
 .content {
     clear:both;
     height: 85vh;
@@ -88,6 +95,21 @@ img {
     justify-content: center;
     align-items: center;
 }
+
+.loginForm {
+    font-size:20px;
+    text-align:center;
+}
+
+.loginInput {
+    font-size:20px;
+    text-align:center;
+}
+
+
+
+
+/*===== Everything below this pertains to the game board =====*/
 
 .main {
     display:flex;
@@ -206,7 +228,7 @@ img {
     overflow:auto;
 }
 
-.move {
+.moveCard {
     display: flex;
     width:95%;
     height:10%;

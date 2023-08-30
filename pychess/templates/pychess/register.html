@@ -1,34 +1,49 @@
+{% extends "pychess/layout.html" %}
+
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
+{% block title %}
+Register for pyChess
+{% endblock %}
 
-<head>
-    <title>Pychess Login</title>
-    <link rel="stylesheet" href="{% static 'pychess/styles.css' %}">
-</head>
-<body>
+{% block body %}
+    <div class="centeredContent" style="align-items:start;">
+        
+        <div style="display:flex; flex-direction: column;">
 
-    {% if message %}
-    <div style="color:white; background-color: red;">
-        {{ message }}
+            {% if message %}
+                <div style="color:white; background-color: red;">
+                    {{ message }}
+                </div>
+            {% endif %}
+
+            <div>
+                <h1> Register for new account </h1>
+            </div>
+            
+            <div class="loginForm">
+                <form action="{% url 'register' %}" method="POST">
+                    <div style="color:white">Username:</div>
+                    <input class="loginInput" type="text" name="username" placeholder="Username"><br>
+                    <br>
+                    <div style="color:white">Email Address:</div>
+                    <input class="loginInput" type="text" name="email" placeholder="Email Address"><br>
+                    <br>
+                    <div style="color:white">Password:</div>
+                    <input class="loginInput" type="password" name="password" placeholder="Password"><br>
+                    <br>
+                    <div style="color:white">Confirm Password:</div>
+                    <input class="loginInput" type="password" name="passwordConfirm" placeholder="Confirm Password"><br>
+                    <br>
+                    <input class="loginInput" type="submit" value="Create Account">
+                    {% csrf_token %}
+                </form>
+                <br>
+                <div>Already have an account? <a href="{% url 'login' %}">Login Instead.</a></div>
+            </div>
+        
+        </div>
     </div>
-    {% endif %}
 
-    <div class="loginForm">
-        <form action="{% url 'register' %}" method="POST">
-            <div style="color:white">Username:</div>
-            <input class="loginInput" type="text" name="username" placeholder="Username"><br>
-            <div style="color:white">Email Address</div>
-            <input class="loginInput" type="text" name="email" placeholder="Email Address"><br>
-            <div style="color:white">Password:</div>
-            <input class="loginInput" type="password" name="password" placeholder="Password"><br>
-            <div style="color:white">Confirm Password:</div>
-            <input class="loginInput" type="password" name="passwordConfirm" placeholder="Confirm Password"><br>
-            <input class="loginInput" type="submit" value="Login">
-            {% csrf_token %}
-        </form>
-        <a href="{% url 'index' %}">Return Home</a>
-    </div>
-</body>
-</html>
+
+{% endblock %}

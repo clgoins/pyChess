@@ -4,6 +4,7 @@ from django.shortcuts import redirect
 import json
 from django.forms.models import model_to_dict
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from .models import *
 from . import chessEngine
@@ -79,7 +80,7 @@ def loginView(request):
 
 def logoutView(request):
     logout(request)
-    return redirect(index)
+    return redirect(loginView)
 
 
 def register(request):
@@ -107,8 +108,9 @@ def register(request):
                           
     else:
         return render(request, 'pychess/register.html')
+   
     
-
+@login_required
 def play(request):
     
     if request.method == "GET":
@@ -141,6 +143,7 @@ def play(request):
         return JsonResponse({"message":"invalid request method"}, status=405)
 
 
+@login_required
 def localGame(request):
 
     if request.method == 'GET':
@@ -159,6 +162,7 @@ def localGame(request):
             return render(request, 'pychess/localGame.html', {'gameID':game.id})
 
 
+@login_required
 def networkGame(request):
     if request.method == "GET":
         room = request.GET.get('room')
@@ -196,6 +200,7 @@ def networkGame(request):
         return JsonResponse({"message":"invalid request method"}, status=405)
 
 
+@login_required
 def review(request):
     return render(request, 'pychess/review.html')
 
@@ -208,6 +213,7 @@ def spectate(request):
 
 
 # API =====================
+
 
 # Takes a gameID and returns a gameState object
 def getGameState(request):
@@ -243,6 +249,7 @@ def getMoveList(request):
         return JsonResponse(responseObject)
     else:
         return JsonResponse({"error":"invalid request method"}, status=405)
+
 
 # takes some info about a piece on the board and returns a list of all of its valid moves
 def checkMoves(request):

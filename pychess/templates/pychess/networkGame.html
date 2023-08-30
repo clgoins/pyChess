@@ -26,7 +26,7 @@ Play Chess!
                         <div>Room code: {{ roomCode }}</div>
                     </div>
                     <div class="infoBottomNetwork" id="moveList">
-                        <div class="move" style="height:50px;">Your room code is {{ roomCode }}<br>Send it to your friend to let them join!</div>
+                        <div class="moveCard" style="height:50px;">Your room code is {{ roomCode }}<br>Send it to your friend to let them join!</div>
                     </div>
                 </div>
             </div>
@@ -171,7 +171,7 @@ Play Chess!
                 {
                     let moveCard = document.createElement('div');
                     let move = moveList[i];
-                    moveCard.className = 'move';
+                    moveCard.className = 'moveCard';
                     moveCard.innerHTML = `${move['turn']}: ${gameState['pieces'][move['pieceID']]['color']} ${gameState['pieces'][move['pieceID']]['type']} to ${move['position']}`;
                     moveListPanel.prepend(moveCard);
                 }

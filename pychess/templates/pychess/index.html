@@ -77,7 +77,9 @@ pyChess Home
 
             
             {% else %}
-                <h2>No Active Games</h2>
+                <h2>No Active Games!</h2>
+                <br>
+                <h2><a href="{% url 'play' %}">Try starting a new one!</a></h2>
             {% endif %}
 
         </div>

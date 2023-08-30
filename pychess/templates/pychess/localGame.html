@@ -92,7 +92,7 @@ Play Chess!
                 {
                     let moveCard = document.createElement('div');
                     let move = moveList[i];
-                    moveCard.className = 'move';
+                    moveCard.className = 'moveCard';
                     moveCard.innerHTML = `${move['turn']}: ${state['pieces'][move['pieceID']]['color']} ${state['pieces'][move['pieceID']]['type']} to ${move['position']}`;
                     moveListPanel.prepend(moveCard);
                 }

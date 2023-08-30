@@ -11,20 +11,50 @@ import string, random
 
 def index(request):
     if request.user.is_authenticated:
-        localGames = Game.objects.filter(player1 = request.user, player2 = request.user)
+        # Local games are all the games where the user is both player1 and player2
+        localGames = Game.objects.filter(player1 = request.user, player2 = request.user, isActive=True)
         
-        networkGames = [] 
-        netGameQuery = Game.objects.filter(player1 = request.user).exclude(player2 = request.user)
+        activeNetworkGames = [] 
+
+        # Grab a list of games where the user is ONLY player1 and add it to the master list
+        netGameQuery = Game.objects.filter(player1 = request.user, isActive=True).exclude(player2 = request.user)
         for game in netGameQuery:
-            networkGames.append(game)
-        netGameQuery = Game.objects.filter(player2 = request.user).exclude(player1 = request.user)
+            activeNetworkGames.append(game)
+
+        # Do the same for games where the user is ONLY player2
+        netGameQuery = Game.objects.filter(player2 = request.user,isActive=True).exclude(player1 = request.user)
         for game in netGameQuery:
-            networkGames.append(game)
+            activeNetworkGames.append(game)
+
+        # Grab a list of completed games (isActive=False) that the user was involved in; and count how many wins, losses, and draws there were
+        completedGames = {}
+        completedGames['wins'] = 0
+        completedGames['draws'] = 0
+        completedGames['losses'] = 0
+
+        netGameQuery = Game.objects.filter(player1 = request.user, isActive=False).exclude(player2=request.user)
+        for game in netGameQuery:
+            if game.winner == request.user:
+                completedGames['wins'] += 1
+            elif game.winner == None:
+                completedGames['draws'] += 1
+            else:
+                completedGames['losses'] += 1
+
+        netGameQuery = Game.objects.filter(player2 = request.user, isActive=False).exclude(player1=request.user)
+        for game in netGameQuery:
+            if game.winner == request.user:
+                completedGames['wins'] += 1
+            elif game.winner == None:
+                completedGames['draws'] += 1
+            else:
+                completedGames['losses'] += 1
 
         
-        return render(request, 'pychess/index.html', {'localGames':localGames, 'networkGames':networkGames})
+        return render(request, 'pychess/index.html', {'localGames':localGames, 'networkGames':activeNetworkGames, 'completedGames':completedGames})
+    
     else:
-        return render(request, 'pychess/index.html')
+        return redirect(loginView)
 
 
 def loginView(request):

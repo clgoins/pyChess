@@ -206,7 +206,21 @@ def review(request):
 
 
 def spectate(request):
-    return render(request, 'pychess/spectate.html')
+    # On initial vist; present user with a form to enter a room code
+    if request.method == "GET":
+        return render(request, 'pychess/spectate.html')
+    
+    # Grab the room code; generate a board state, and allow the user to watch the game. Generate an error if the room code is invalid.
+    elif request.method == "POST":
+        roomCode = request.POST['roomCode']
+        if Game.objects.filter(roomCode=roomCode).exists():
+            gameID = Game.objects.get(roomCode=roomCode).id
+            print(gameID)
+            return render(request, 'pychess/spectateGame.html', {"gameID":gameID})
+        else:
+            return render(request, 'pychess/spectate.html', {"message":"Invalid room code!"})
+    else:
+        return JsonResponse({"error":"invalid request method"}, status=405)
 
 
 

@@ -1,0 +1,279 @@
+{% extends "pychess/layout.html"%}
+
+{% block title %}
+Spectate
+{% endblock %}
+
+{% block body %}
+
+<div class="centeredContent">
+    <div class="main">
+        <div class="game">
+            <div class="boardContainer" id="boardContainer">
+
+            </div>
+        </div>
+        <div class="info">
+            <div class="infoTop">
+                <h2 id="status">
+                    Waiting for player
+                </h2>
+            </div>
+            <div class="infoMid">
+                <div>Now spectating: </div>
+                <div><span id="p1"></span> vs <span id="p2"></span></div>
+                <div>Room code: <span id="roomCode"></span></div>
+            </div>
+            <div class="infoBottomNetwork" id="moveList">
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+{% csrf_token %}
+
+
+
+
+    {% csrf_token %}
+
+    <script>
+        var gameState = {};
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        var gameID = "{{ gameID }}"
+        var updateTimer;
+
+
+
+        //Get the initial board state; render the game; begin polling for updates periodically.
+        let statePromise = getGameState();
+        statePromise.then((state) => {
+            gameState = state;
+
+            document.querySelector("#p1").innerHTML = gameState['player1'];
+            document.querySelector("#p2").innerHTML = gameState['player2'];
+            document.querySelector("#roomCode").innerHTML = gameState['roomCode'];
+
+            drawBoard();
+            drawPieces();
+            updateStatus();
+            updateMoveList(state);
+            updateTimer = setInterval(checkForUpdates,5000);
+            checkWinCondition();
+        });
+
+
+        //Checks the database for any changes made to the game
+        function checkForUpdates()
+        {
+            let statePromise = getGameState();
+            statePromise.then((state) => {
+            
+                //If a change was detected, update the gameState and draw the new board.
+                if (JSON.stringify(gameState) != JSON.stringify(state))
+                {
+                    gameState = state;
+                    drawBoard();
+                    drawPieces();
+                    updateStatus();
+                    updateMoveList(state);
+                    checkWinCondition();
+                }
+                
+            });
+        }
+
+        //returns a promise that will contain a JSON object with the current game state once fulfilled
+        async function getGameState()
+        {
+            const response = await fetch(`/gameState?gameID=${gameID}`);
+            const state = await response.json();
+            return state;
+        }
+
+        //Gets a list of moves associated with the current game and displays them in the info panel to the right of the board
+        function updateMoveList()
+        {
+            fetch("{% url 'moveList' %}", {
+                method:'POST',
+                headers: {'X-CSRFToken':csrftoken},
+                mode: 'same-origin',
+                body: JSON.stringify({state:gameState})
+            })
+            .then(response => response.json())
+            .then(rawMoveList => {
+
+                let moveListPanel = document.querySelector("#moveList");
+                moveListPanel.innerHTML = "";
+                let moveList = rawMoveList['moveList'];
+                let pieces = gameState['pieces'];
+
+                for (let i = 0 ; i < moveList.length; i++)
+                {
+                    let moveCard = document.createElement('div');
+                    let move = moveList[i];
+                    moveCard.className = 'moveCard';
+                    moveCard.innerHTML = `${move['turn']}: ${gameState['pieces'][move['pieceID']]['color']} ${gameState['pieces'][move['pieceID']]['type']} to ${move['position']}`;
+                    moveListPanel.prepend(moveCard);
+                }
+
+            })
+        }
+        
+        //Update the status message to display whose turn it is.
+        function updateStatus()
+        {
+            if(gameState['turnNumber'] % 2 == 0)
+                document.querySelector("#status").innerHTML = `${gameState['player1']} to move`;
+            else
+                document.querySelector("#status").innerHTML = `${gameState['player2']} to move`;
+        }
+
+        //renders the checkerboard pattern on the screen, in the form of an HTML table
+        function drawBoard()
+        {
+            let board = document.createElement("table");
+            board.className = "board";
+            let isLight=true;
+
+            //Couple of nested for loops to draw an 8x8 grid of cells, alternating light and dark
+            for (let i = 0; i < 8; i++)
+            {
+                let row = document.createElement("tr");
+                row.className = "boardRow";
+
+                for (let j = 0; j < 8; j++)
+                {
+                    let cell = document.createElement("td");
+
+                    //HTML ID's cannot start with a number for some reason, so the id is prefixed with a 'p'
+                    cell.id = `p${j}_${i}`;
+
+                    //Picks the background color for the cell
+                    if(isLight)
+                        cell.className = "lightCell";
+                    else
+                        cell.className = "darkCell";
+
+                    row.append(cell);
+                    isLight = !isLight;
+
+                }
+                board.append(row);
+                isLight = !isLight;
+            }
+    
+            //Clear off the existing board before redrawing it
+            document.querySelector('#boardContainer').innerHTML = '';
+            document.querySelector('#boardContainer').append(board);
+         
+        }
+
+        //reads each piece position from the gameState, and adds <img> tags with click handlers to represent each piece to the board
+        function drawPieces()
+        {
+            //grab an array of pieces from the gameState object to iterate through
+            pieces = gameState['pieces']
+
+            for(let i = 0; i < pieces.length; i++)
+            {
+                //only draw a piece if it has not been captured
+                if(!pieces[i]['captured'])
+                {
+                    //create an image tag for each piece
+                    const image = document.createElement("img");
+                    image.src=`/static/pychess/images/${pieces[i]['type']}_${pieces[i]['color']}.png`
+
+                    //find the correct space to place it, and append the image file
+                    document.querySelector(`#p${pieces[i]['rank']}_${pieces[i]['file']}`).append(image);
+                }
+            }
+        }
+
+
+        //at the start of every turn; check to see if a win or stalemate condition has been reached
+        function checkWinCondition()
+        {
+
+            //determine whose turn it is
+            let playerTurn;
+            if (gameState['turnNumber'] % 2 == 0)
+                playerTurn = 'light';
+            else
+                playerTurn = 'dark';
+
+            //make a call to the chess engine to do the actual checking
+            fetch("{% url 'checkForWinCondition' %}", {
+                            method:'POST',
+                            headers: {'X-CSRFToken':csrftoken},
+                            mode: 'same-origin',
+                            body: JSON.stringify({
+                            state:gameState,
+                            color:playerTurn           
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(winCondition => {
+
+                            //If a checkmate has been achieved; update the status message and play the end game animation.
+                            if (winCondition['message'] === "checkmate")
+                            {
+                                let winner = "";
+                                if (playerTurn === 'light')
+                                    winner = `${gameState['player2']}`;
+                                else
+                                    winner = `${gameState['player1']}`;
+
+                                document.querySelector("#status").innerHTML = `${winner} wins by checkmate`
+                                endGameAnimation();
+
+                                clearInterval(updateTimer);
+                            }
+
+                            //Do the same for a stalemate or for a draw.
+                            else if (winCondition['message'] === "stalemate")
+                            {
+                                document.querySelector("#status").innerHTML = "Game ends in a stalemate"
+                                endGameAnimation();
+                                clearInterval(updateTimer);
+                            }
+                            else if (winCondition['message'] === "draw")
+                            {
+                                document.querySelector("#status").innerHTML = "Game ends in a draw"
+                                endGameAnimation();
+                                clearInterval(updateTimer);
+                            }
+                        })
+        }
+
+
+        //Do a little animation on the board to make it SUPER obvious the game is over
+        async function endGameAnimation()
+        {
+            
+            let tableCells = document.querySelectorAll("td");
+            let boardColor = "darkcyan";;
+            document.querySelector(".infoTop").style.backgroundColor = "darkcyan";;
+            document.querySelector(".infoTop").style.color = "rgb(31, 27, 82)";
+
+            for (let i = 0; i < tableCells.length; i++)
+            {
+                tableCells[i].style.backgroundColor = boardColor;
+                await sleep(50);
+            }
+        }
+
+
+        //Custom sleep function for the end game animation
+        function sleep(ms)
+        {
+            return new Promise(resolve => setTimeout(resolve,ms));
+        }
+    </script>
+
+
+{% endblock %}

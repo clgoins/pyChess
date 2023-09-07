@@ -184,9 +184,9 @@ Play Chess!
         function updateStatus()
         {
             if(gameState['turnNumber'] % 2 == 0)
-                document.querySelector("#status").innerHTML = 'Light to move';
+                document.querySelector("#status").innerHTML = `${gameState['player1']} to move`;
             else
-                document.querySelector("#status").innerHTML = 'Dark to move';
+                document.querySelector("#status").innerHTML = `${gameState['player2']} to move`;
         }
 
 
@@ -270,6 +270,7 @@ Play Chess!
          
         }
 
+        
         //reads each piece position from the gameState, and adds <img> tags with click handlers to represent each piece to the board
         function drawPieces()
         {

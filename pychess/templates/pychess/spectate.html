@@ -5,5 +5,17 @@ Spectate
 {% endblock %}
 
 {% block body %}
-Spectate test page.
+
+{% if message %}
+    {{ message }} <br>
+{% endif %}
+
+Enter a room code:
+
+<form method="post" action="{% url 'spectate' %}">
+    <input type="text" name="roomCode" placeholder="Room Code">
+    <input type="submit" value="Spectate">
+    {% csrf_token %}
+</form>
+
 {% endblock %}

@@ -492,7 +492,7 @@ def move(gameID, piece, position):
 
 
 # recreates the most recent state of the board, given a gameID
-def generateBoardState(gameID, moveCount=-1):
+def generateBoardState(gameID):
     # generate a fresh board state
     # gather every move from the db with the associated gameID attached
     # will limit the list to the first x moves, based on moveCount. If moveCount < 0, it will not limit the list.
@@ -501,8 +501,7 @@ def generateBoardState(gameID, moveCount=-1):
 
     boardState = createNewBoard(Game.objects.get(id=gameID))
 
-    if moveCount < 0:
-        moveList = Move.objects.filter(gameID = Game.objects.get(id=gameID)).order_by('moveNumber')
+    moveList = Move.objects.filter(gameID = Game.objects.get(id=gameID)).order_by('moveNumber')
     
     # If the moveList is empty, go ahead and return the brand new board
     if not moveList:

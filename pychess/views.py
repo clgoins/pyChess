@@ -202,8 +202,53 @@ def networkGame(request):
 
 @login_required
 def review(request):
-    return render(request, 'pychess/review.html')
+    
+    if request.method == "GET":
+        # Generate a queryset of games that the user was a part of
+        gameQuery = Game.objects.filter(player1 = request.user) | Game.objects.filter(player2 = request.user)
 
+        # Extract some info from the queryset and add each game to a list to pass to the front end to display. Opponent name; room code; local/network game
+        games = []
+        for query in gameQuery:
+            # Only look at the game if it's no longer active; otherwise discard it
+            if not query.isActive:
+
+                
+
+                # For network games; determine which player the user is, and store the opposing users name in "opponent"
+                # If player1 == player2; it's a local game
+                if query.player1 != query.player2:
+                    gameType = "Network"
+                    opponent = query.player2 if request.user == query.player1 else query.player1
+                
+                # For local games, there's no opponent name to display
+                else:
+                    gameType = "Local"
+                    opponent = "---"
+
+                # Create a list entry that contains the info to be displayed           
+                game = {}
+                game['gameType'] = gameType
+                game['opponent'] = opponent
+                game['winner'] = query.winner if query.winner != None else "DRAW"
+                game['roomCode'] = query.roomCode
+
+                # Add the list entry to the master list
+                games.append(game)
+
+        return render(request, 'pychess/review.html', {"games":games})
+
+    else:
+        return JsonResponse({"error":"Invalid request method"}, status=405)
+
+
+@login_required
+def reviewGame(request, roomCode):
+
+    # Get some initial info from the provided roomCode to pass to the front end
+    game = Game.objects.get(roomCode=roomCode)
+
+    return render(request,'pychess/reviewGame.html', {'gameID':game.id, 'roomCode':roomCode, 'player1':game.player1, 'player2':game.player2})
 
 def spectate(request):
     # On initial vist; present user with a form to enter a room code
@@ -246,9 +291,9 @@ def getGameState(request):
 def getMoveList(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        gameState = data.get('state')
+        gameID = data.get('gameID')
         moveList = []
-        rawMoveList = Move.objects.filter(gameID=Game.objects.get(id=gameState['id']))
+        rawMoveList = Move.objects.filter(gameID=gameID)
 
         for move in rawMoveList:
             newMove = {}

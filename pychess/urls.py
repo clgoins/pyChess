@@ -11,6 +11,7 @@ urlpatterns = [
     path("play/local", views.localGame, name="localGame"),
     path("play/network", views.networkGame, name="networkGame"),
     path("review", views.review, name="review"),
+    path("review/<str:roomCode>", views.reviewGame, name="reviewGame"),
     path("spectate", views.spectate, name="spectate"),
 
 

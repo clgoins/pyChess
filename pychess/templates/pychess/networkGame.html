@@ -157,7 +157,7 @@ Play Chess!
                 method:'POST',
                 headers: {'X-CSRFToken':csrftoken},
                 mode: 'same-origin',
-                body: JSON.stringify({state:gameState})
+                body: JSON.stringify({gameID:gameID})
             })
             .then(response => response.json())
             .then(rawMoveList => {
@@ -285,6 +285,7 @@ Play Chess!
                     //create an image tag for each piece
                     const image = document.createElement("img");
                     image.src=`/static/pychess/images/${pieces[i]['type']}_${pieces[i]['color']}.png`
+                    image.style = "width: 75%; height: 75%;"
                     
                     //when the piece is clicked, call clickPiece() and pass in i as the id number
                     image.addEventListener('click', () => clickPiece(i), {signal:killClickHandlers.signal});

@@ -5,5 +5,38 @@ Review
 {% endblock %}
 
 {% block body %}
-Review test page.
+
+{% if games %}
+
+    Select a past game to review:
+
+    <br><br>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Opponent:</th>
+                <th>Winner:</th>
+                <th>Room Code:</th>
+                <th>Game Type:</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for game in games %}
+                <tr>
+                    <td>{{ game.opponent }}</td>
+                    <td>{{ game.winner }}</td>
+                    <td><a href="{% url 'reviewGame' game.roomCode %}">{{ game.roomCode }}</a></td>
+                    <td>{{ game.gameType }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% else %}
+
+    No games to review! <a href="{% url 'play' %}">Try playing a few first!</a>
+
+{% endif %}
+
 {% endblock %}

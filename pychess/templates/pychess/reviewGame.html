@@ -1,0 +1,459 @@
+{% extends "pychess/layout.html"%}
+
+{% block title %}
+Review
+{% endblock %}
+
+{% block body %}
+<div class="centeredContent">
+    <div class="main">
+        <div class="game">
+            <div class="boardContainer" id="boardContainer">
+
+            </div>
+        </div>
+        <div class="info">
+            <div class="infoTop">
+                <h2 id="status">
+                    Reviewing
+                </h2>
+            </div>
+            <div class="infoMid">
+                <div>Reviewing game: </div>
+                <div><span id="p1"></span> vs <span id="p2"></span></div>
+                <div>Room code: <span id="roomCode"></span></div>
+            </div>
+            <div class="infoBottomNetwork" style="flex-basis:60%" id="moveList">
+                
+            </div>
+            <div class="transportBar">
+                <img class="transportButton" src="/static/pychess/images/button_last.png" id="lastButton">
+                <img class="transportButton" src="/static/pychess/images/button_play.png" id="playButton">
+                <img class="transportButton" src="/static/pychess/images/button_stop.png" id="stopButton">
+                <img class="transportButton" src="/static/pychess/images/button_next.png" id="nextButton">
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% csrf_token %}
+
+<script>
+
+    //All of the board state information is generated client side during review; to avoid needless database queries.
+    //One call can be made at the start of the game to get the move list; and everything else can be done on the frontend.
+
+    var gameState = {};
+    var gameID = "{{ gameID }}"
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    var updateTimer;
+    var moveCounter = 0;
+    var moveList;
+
+    //Add click listeners for each of the transport buttons
+    document.querySelector("#lastButton").addEventListener('click', () => lastButton());
+    document.querySelector("#playButton").addEventListener('click', () => playButton());
+    document.querySelector("#stopButton").addEventListener('click', () => stopButton());
+    document.querySelector("#nextButton").addEventListener('click', () => nextButton());
+
+    //Update the information panel with the players names & room code.
+    document.querySelector("#p1").innerHTML = "{{ player1 }}";
+    document.querySelector("#p2").innerHTML = "{{ player2 }}";
+    document.querySelector("#roomCode").innerHTML = "{{ roomCode }}";
+
+
+    //Fetch the complete move list from the game to review; generate and render a fresh board state
+    fetch("{% url 'moveList' %}", {
+            method:'POST',
+            headers: {'X-CSRFToken':csrftoken},
+            mode: 'same-origin',
+            body: JSON.stringify({gameID:gameID})
+        })
+        .then(response => response.json())
+        .then(rawMoveList => {
+            moveList = rawMoveList['moveList'];
+                
+            //Recreates the board state up to a given move in the list.
+            gameState = simulateGame();
+            drawBoard();
+            drawPieces();
+            updateMoveList();
+            updateStatus();
+            updateTimer = setInterval(autoStep,1000);
+        })
+
+
+    //automatically increments the move count and refreshed the board
+    function autoStep()
+    {
+        if(moveCounter < moveList.length)
+        {
+            moveCounter++;
+            gameState = simulateGame();
+            drawBoard();
+            drawPieces();
+            updateMoveList();
+            updateStatus();
+        }
+        else
+            clearInterval(updateTimer);
+    }
+
+
+    //Light version of generateBoardState from the chess engine that will run entirely client side
+    function simulateGame()
+    {
+        boardState = simulateFreshBoardState();
+
+        for (let i = 0; i < moveCounter; i++)
+        {
+            let coords = rankFileToCoord(moveList[i]['position']);
+            let piece = boardState['pieces'][moveList[i]['pieceID']];
+            let previousRank = piece['rank'];
+            let previousFile = piece['file'];
+            let capturePerformed = false;
+            piece['rank'] = coords[0];
+            piece['file'] = coords[1];
+
+            //castling
+            if(piece['type'] == 'king' && piece['hasMoved'] == false)
+            {
+                if (piece['rank'] == 2 && piece['file'] == 7)
+                    boardState['pieces'][24]['rank'] = 3;
+                else if (piece['rank'] == 6 && piece['file'] == 7)
+                    boardState['pieces'][31]['rank'] = 5;
+                else if (piece['rank'] == 2 && piece['file'] == 0)
+                    boardState['pieces'][0]['rank'] = 3;
+                else if (piece['rank'] == 6 && piece['file'] == 0)
+                    boardState['pieces'][7]['rank'] = 5;
+            }
+
+            piece['hasMoved'] = true;
+            boardState['turnNumber']++;
+
+            //Promotion
+            if(piece['type'] == 'pawn' && piece['color'] == 'dark' && piece['file'] == 7)
+                piece['type'] = 'queen';
+            
+            if(piece['type'] == 'pawn' && piece['color'] == 'light' && piece['file'] == 0)
+                piece['type'] = 'queen';
+
+
+            //captures
+            for(let i = 0; i < boardState['pieces'].length; i++)
+            {
+                let boardPiece = boardState['pieces'][i];
+                if(boardPiece != piece && boardPiece['captured'] == false && boardPiece['rank'] == piece['rank'] && boardPiece['file'] == piece['file'])
+                {
+                    boardPiece['captured'] = true;
+                    capturePerformed = true;
+                    break;
+                }
+            }
+
+            //En Passant
+            if(piece['type'] == 'pawn' && capturePerformed == false && (piece['rank'] == previousRank - 1 || piece['rank'] == previousRank + 1))
+            {
+                for(let i = 0; i < boardState['pieces'].length; i++)
+                {
+                    let boardPiece = boardState['pieces'][i];
+                    if (boardPiece['rank'] == piece['rank'] && boardPiece['file'] == previousFile)
+                    {
+                        boardPiece['captured'] = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return boardState;
+
+    }
+
+
+    //Front end version of createNewBoard from the chess engine; to work with simulateGame()
+    function simulateFreshBoardState()
+    {
+        newState = {};
+        newState['id'] = "{{ gameID }}";
+        newState['roomCode'] = "{{ roomCode }}"
+        newState['player1'] = "{{ player1 }}";
+        newState['player2'] = "{{ player2 }}";
+        newState['turnNumber'] = 0;
+
+        pieceList = [];
+
+        for(let i = 0; i < 32; i++)
+        {
+            piece = {};
+            piece['id'] = i;
+
+            if(i < 16)
+                piece['color'] = 'dark';
+            else
+                piece['color'] = 'light';
+
+            if (i < 8 || i >= 24)
+            {
+                if (i == 0 || i == 7 || i == 24 || i == 31)
+                    piece['type'] = 'rook'
+                else if (i == 1 || i == 6 || i == 25 || i == 30)
+                    piece['type'] = 'knight'
+                else if (i == 2 || i == 5 || i == 26 || i == 29)
+                    piece['type'] = 'bishop'
+                else if (i == 3 || i == 27)
+                    piece['type'] = 'queen'
+                else
+                    piece['type'] = 'king'
+            }
+            else
+                piece['type'] = 'pawn'  
+            
+                
+            if (i < 8)
+            {
+                piece['rank'] = i
+                piece['file'] = 0
+            }
+            else if (i >=8 && i < 16)
+            {
+                piece['rank'] = i - 8
+                piece['file'] = 1
+            }
+            else if (i >= 16 && i < 24)
+            {
+                piece['rank'] = i - 16
+                piece['file'] = 6
+            }
+            else
+            {
+                piece['rank'] = i - 24
+                piece['file'] = 7
+            }
+
+            piece['captured'] = false
+            piece['hasMoved'] = false
+
+            pieceList.push(piece)
+        }
+
+        newState['pieces'] = pieceList;
+
+        return newState;
+
+    }
+
+
+    //Displays the previous move information in the info panel on screen
+    function updateMoveList()
+    {
+
+            let moveListPanel = document.querySelector("#moveList");
+            moveListPanel.innerHTML = "";
+            let pieces = gameState['pieces'];
+
+            for (let i = 0 ; i < moveCounter; i++)
+            {
+                let moveCard = document.createElement('div');
+                let move = moveList[i];
+                moveCard.className = 'moveCard';
+                moveCard.innerHTML = `${move['turn']}: ${gameState['pieces'][move['pieceID']]['color']} ${gameState['pieces'][move['pieceID']]['type']} to ${move['position']}`;
+                moveListPanel.prepend(moveCard);
+            }
+
+    }
+    
+
+    //Update the status message to display whose turn it is.
+    function updateStatus()
+    {
+        if(gameState['turnNumber'] % 2 == 0)
+            document.querySelector("#status").innerHTML = `${gameState['player1']} to move`;
+        else
+            document.querySelector("#status").innerHTML = `${gameState['player2']} to move`;
+    }
+
+
+    //renders the checkerboard pattern on the screen, in the form of an HTML table
+    function drawBoard()
+    {
+        let board = document.createElement("table");
+        board.className = "board";
+        let isLight=true;
+
+        //Couple of nested for loops to draw an 8x8 grid of cells, alternating light and dark
+        for (let i = 0; i < 8; i++)
+        {
+            let row = document.createElement("tr");
+            row.className = "boardRow";
+
+            for (let j = 0; j < 8; j++)
+            {
+                let cell = document.createElement("td");
+
+                //HTML ID's cannot start with a number for some reason, so the id is prefixed with a 'p'
+                cell.id = `p${j}_${i}`;
+
+                //Picks the background color for the cell
+                if(isLight)
+                    cell.className = "lightCell";
+                else
+                    cell.className = "darkCell";
+
+                row.append(cell);
+                isLight = !isLight;
+
+            }
+            board.append(row);
+            isLight = !isLight;
+        }
+
+        //Clear off the existing board before redrawing it
+        document.querySelector('#boardContainer').innerHTML = '';
+        document.querySelector('#boardContainer').append(board);
+        
+    }
+
+
+    //reads each piece position from the gameState, and adds <img> tags with click handlers to represent each piece to the board
+    function drawPieces()
+    {
+        //grab an array of pieces from the gameState object to iterate through
+        pieces = gameState['pieces']
+
+        for(let i = 0; i < pieces.length; i++)
+        {
+            //only draw a piece if it has not been captured
+            if(!pieces[i]['captured'])
+            {
+                //create an image tag for each piece
+                const image = document.createElement("img");
+                image.src=`/static/pychess/images/${pieces[i]['type']}_${pieces[i]['color']}.png`
+                image.style = "width: 75%; height: 75%;"
+
+                //find the correct space to place it, and append the image file
+                document.querySelector(`#p${pieces[i]['rank']}_${pieces[i]['file']}`).append(image);
+            }
+        }
+    }
+
+
+    //Converts a string rankFile to a 2-item array of integer coordinates
+    function rankFileToCoord(rankFile)
+    {
+        let xPos;
+        let yPos;
+
+        switch (rankFile.charAt(0))
+        {
+            case 'A':
+                xPos = 0;
+                break;
+            case 'B':
+                xPos = 1;
+                break;
+            case 'C':
+                xPos = 2;
+                break;
+            case 'D':
+                xPos = 3;
+                break;
+            case 'E':
+                xPos = 4;
+                break;
+            case 'F':
+                xPos = 5;
+                break;
+            case 'G':
+                xPos = 6;
+                break;
+            case 'H':
+                xPos = 7;
+                break;
+        }
+        
+        switch (rankFile.charAt(1))
+        {
+            case '1':
+                yPos = 7;
+                break;
+            case '2':
+                yPos = 6;
+                break;
+            case '3':
+                yPos = 5;
+                break;
+            case '4':
+                yPos = 4;
+                break;
+            case '5':
+                yPos = 3;
+                break;
+            case '6':
+                yPos = 2;
+                break;
+            case '7':
+                yPos = 1;
+                break;
+            case '8':
+                yPos = 0;
+                break;
+        }
+
+        return [xPos, yPos];
+    }
+
+
+
+    //=====Event listeners for the transport buttons=======
+    
+    //Steps backwards to the previous move
+    function lastButton()
+    {
+        if(moveCounter > 0)
+        {
+            moveCounter--;
+            gameState = simulateGame();
+            drawBoard();
+            drawPieces();
+            updateMoveList();
+            updateStatus();
+        }
+    }
+
+    //Step through moves automatically, one at a time, once per second.
+    function playButton()
+    {
+        if(updateTimer == null)
+        {
+            updateTimer = setInterval(autoStep,1000);
+        }
+    }
+
+    //Stops stepping through moves automatically
+    function stopButton()
+    {
+        if(updateTimer != null)
+        {
+            clearInterval(updateTimer);
+            updateTimer = null;
+        }
+    }
+
+    //Steps forward to the next move
+    function nextButton()
+    {
+        if(moveCounter < moveList.length)
+        {
+            moveCounter++;
+            gameState = simulateGame();
+            drawBoard();
+            drawPieces();
+            updateMoveList();
+            updateStatus();
+        }
+    }
+
+</script>
+{% endblock %}

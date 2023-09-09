@@ -11,10 +11,6 @@ a:hover {
     background-color: aliceblue;
 }
 
-img {
-    width: 75%;
-    height:75%;
-}
 
 
 /*===== Header, navbar, and footer =====*/
@@ -117,6 +113,20 @@ img {
 }
 
 
+/*===== Transport bar during game review =====*/
+.transportBar {
+    display:flex;
+    flex-basis:auto;
+    flex-grow:0;
+    height:15%;
+    width:100%;
+    align-items: center;
+    justify-content: center;
+    border:solid;
+    border-radius: 12px;
+    border-color: aliceblue;
+    color: aliceblue;
+}
 
 /*===== Everything below this pertains to the game board =====*/
 
@@ -135,7 +145,6 @@ img {
     margin-right:5px;
     align-items: center;
     justify-content: center;
-
 }
 
 .boardContainer {

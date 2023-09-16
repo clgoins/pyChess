@@ -112,6 +112,16 @@ a:hover {
     text-align: center;
 }
 
+.tableScroller
+{
+    height:100%;
+    margin-bottom:5%;
+    overflow:auto;
+    border:solid;
+    border-color:aliceblue;
+    border-radius: 15px;
+}
+
 
 /*===== Transport bar during game review =====*/
 .transportBar {

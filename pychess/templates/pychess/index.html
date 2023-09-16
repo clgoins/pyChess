@@ -7,82 +7,96 @@ pyChess Home
 
 
 {% block body %}
-    <div class="content">
+
+    <style>
+        td {
+            height:24px;
+        }
+    </style>
+
+    <div class="centeredContent" style="align-items:start;">
+        <div style="height:100%; width:50%; display:flex; flex-direction: column;">
     
-        <br>
-    
-        <div style="width:100%; text-align: center;">
-            <h1>
-                <span>Wins: {{ completedGames.wins }}</span>
-                <span style="margin:10%;">Draws: {{ completedGames.draws }}</span>
-                <span>Losses: {{ completedGames.losses }}</span>
-            </h1>
+            <br>
+        
+            <div style="width:100%; height:10%; text-align: center;">
+                <h1>
+                    <span>Wins: {{ completedGames.wins }}</span>
+                    <span style="margin:10%;">Draws: {{ completedGames.draws }}</span>
+                    <span>Losses: {{ completedGames.losses }}</span>
+                </h1>
+            </div>
+
+            <div style="display:flex; flex-direction:row; width:100%; height:89%;">
+
+                <div style="width:50%;height:100%; overflow:auto; border:solid; border-color:aliceblue; border-radius:15px; margin-right:5px;">
+                
+                    <div style="width:100%; text-align: center;">
+                        <h2>Local Games:</h2>
+                    </div>
+
+                    {% if localGames %}
+                        <table style="width:100%; text-align: center; font-size: 18px; font-weight:bold;">
+                            
+                                {% for game in localGames %}
+                                    <tr><td><a href="{% url 'localGame' %}?room={{game.roomCode}}">Room {{ game.roomCode }}</a></td></tr>
+                                {% endfor %}
+
+                        </table>
+
+                    {% else %}
+
+                            <div style="width:100%; font-size:24px; text-align: center;">No local games to show</div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div style="width:50%;height:100%; overflow:auto; border:solid; border-color:aliceblue; border-radius:15px; margin-left:5px;">
+                    
+                    <div style="width:100%; text-align: center;">
+                        <h2>Network Games:</h2>
+                    </div>
+
+                    {% if networkGames %}
+
+                        <table style="table-layout: fixed; width:100%; text-align: center; font-size: 18px; font-weight:bold;">
+                            {% for game in networkGames %}
+                                <tr>
+                                    <td style="white-space: nowrap; min-width:33%;">
+                                        <a href="{% url 'networkGame' %}?room={{game.roomCode}}">Room {{ game.roomCode }}</a>
+                                    </td>
+                                    <td  style="white-space: nowrap; overflow:hidden; text-overflow:ellipsis">
+                                        {% if game.player2 %}
+
+                                            {% if request.user == game.player1 %}
+                                                Against: {{ game.player2 }}
+                                            {% else %}
+                                                Against: {{ game.player1 }}
+                                            {% endif %}
+
+                                        {% else %}
+
+                                            Waiting on second player
+
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+
+                    {% else %}
+
+                        <div style="width:100%; font-size:24px; text-align: center;">No network games to show</div>
+
+                    {% endif %}
+
+                </div>
+ 
+            </div>
+
+
         </div>
-
-        <br><br>
-
-        <div style="margin:auto; width:30%; text-align: center;">
-            
-            {% if localGames or networkGames %}
-
-                <table style="float:left">
-                    <thead>
-                        <tr>
-                            <th>
-                                <h2>Local Games: </h2>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for game in localGames %}
-                    <tr>
-                        <td style="font-size: 20px;">
-                            <a href="{% url 'localGame' %}?room={{game.roomCode}}">Room: {{ game.roomCode }}</a><br>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-
-
-                <table style="float:right">
-                    <thead>
-                        <th colspan="2">
-                            <h2>Network Games: </h2>
-                        </th>
-                    </thead>
-
-                    <tbody>
-                    {% for game in networkGames %} 
-                        <tr>
-                            <td style="padding-right: 15px; font-size: 20px;">
-                                <a href="{% url 'networkGame' %}?room={{game.roomCode}}">Room: {{ game.roomCode }}</a>
-                            </td>
-
-                            <td style="font-size: 20px;">
-                                {% if game.player2%}
-                                    {% if request.user == game.player1 %}
-                                        Playing Against: {{ game.player2 }}
-                                    {% else %}
-                                        Playing Against: {{ game.player1 }}
-                                    {% endif %}
-                                {% else %}
-                                    Waiting on player
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-
-            
-            {% else %}
-                <h2>No Active Games!</h2>
-                <br>
-                <h2><a href="{% url 'play' %}">Try starting a new one!</a></h2>
-            {% endif %}
-
-        </div>
-
     </div>
 {% endblock %}

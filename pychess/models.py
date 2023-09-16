@@ -14,6 +14,9 @@ class Game(models.Model):
     isActive = models.BooleanField()
     winner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="winner", null=True, blank=True)
 
+    def __str__(self):
+        return self.roomCode
+
 
 class Move(models.Model):
     gameID = models.ForeignKey(Game, on_delete=models.CASCADE)

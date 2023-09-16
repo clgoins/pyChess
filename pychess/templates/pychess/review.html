@@ -6,37 +6,64 @@ Review
 
 {% block body %}
 
-{% if games %}
+<style>
+    td 
+    {
+        text-align:center; 
+        font-size: large;
+        height: 25px;
+    }
 
-    Select a past game to review:
+    th
+    {
+        width:150px; 
+        font-size: larger; 
+        font-weight: bold;
+    }
 
-    <br><br>
+</style>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Opponent:</th>
-                <th>Winner:</th>
-                <th>Room Code:</th>
-                <th>Game Type:</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for game in games %}
-                <tr>
-                    <td>{{ game.opponent }}</td>
-                    <td>{{ game.winner }}</td>
-                    <td><a href="{% url 'reviewGame' game.roomCode %}">{{ game.roomCode }}</a></td>
-                    <td>{{ game.gameType }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="centeredContent" style="align-items: start;">
+    <div style="height:100%; display:flex; flex-direction: column;">
 
-{% else %}
+    {% if games %}
 
-    No games to review! <a href="{% url 'play' %}">Try playing a few first!</a>
 
-{% endif %}
+        <div style="text-align: center; margin: 2%;">
+        <H1>Select a past game to review:</H1>
+        </div>
+
+        <br><br>
+        <div class="tableScroller">
+            <table style="table-layout: fixed;">
+                <thead>
+                    <tr>
+                        <th style=>Game Type:</th>
+                        <th style="width:150px; font-size: larger; font-weight: bold;">Opponent:</th>
+                        <th style="width:150px; font-size: larger; font-weight: bold;">Outcome:</th>
+                        <th style="width:150px; font-size: larger; font-weight: bold;">Room Code:</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for game in games %}
+                        <tr>
+                            <td>{{ game.gameType }}</td>
+                            <td style="overflow:hidden; text-overflow: ellipsis; text-wrap: nowrap;">{{ game.opponent }}</td>
+                            <td>{{ game.outcome }}</td>
+                            <td><a href="{% url 'reviewGame' game.roomCode %}">{{ game.roomCode }}</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    {% else %}
+
+        No games to review! <a href="{% url 'play' %}">Try playing a few first!</a>
+
+    {% endif %}
+
+    </div>
+</div>
 
 {% endblock %}

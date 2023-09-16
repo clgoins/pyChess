@@ -6,16 +6,31 @@ Spectate
 
 {% block body %}
 
-{% if message %}
-    {{ message }} <br>
-{% endif %}
+<div class="centeredContent" style="align-items:start;">
+    <div style="display:flex; flex-direction: column;">
 
-Enter a room code:
 
-<form method="post" action="{% url 'spectate' %}">
-    <input type="text" name="roomCode" placeholder="Room Code">
-    <input type="submit" value="Spectate">
-    {% csrf_token %}
-</form>
+        {% if message %}
+                    <div class="errorMessage">
+                            <strong>{{ message }}</strong>
+                    </div>
+        {% endif %}
+
+        
+
+        <div style="text-align: center; margin-top:10%;">
+            <h2>Enter a room code:</h2>
+        </div>
+
+        <div class="loginForm">
+            <form method="post" action="{% url 'spectate' %}">
+                <input class="loginInput" type="text" name="roomCode" placeholder="Room Code">
+                <br><br>
+                <input class="loginInput" type="submit" value="Spectate">
+                {% csrf_token %}
+            </form>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

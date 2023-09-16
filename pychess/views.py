@@ -230,7 +230,14 @@ def review(request):
                 game = {}
                 game['gameType'] = gameType
                 game['opponent'] = opponent
-                game['winner'] = query.winner if query.winner != None else "DRAW"
+
+                if query.winner == request.user:
+                    game['outcome'] = "WIN"
+                elif query.winner == None:
+                    game['outcome'] = "DRAW"
+                else:
+                    game['outcome'] = "LOSE"
+
                 game['roomCode'] = query.roomCode
 
                 # Add the list entry to the master list
@@ -249,6 +256,7 @@ def reviewGame(request, roomCode):
     game = Game.objects.get(roomCode=roomCode)
 
     return render(request,'pychess/reviewGame.html', {'gameID':game.id, 'roomCode':roomCode, 'player1':game.player1, 'player2':game.player2})
+
 
 def spectate(request):
     # On initial vist; present user with a form to enter a room code

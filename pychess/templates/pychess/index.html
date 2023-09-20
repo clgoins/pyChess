@@ -14,99 +14,81 @@ pyChess Home
         }
     </style>
 
-    <div class="centeredContent" style="align-items:start;">
-        <div style="height:100%; width:50%; display:flex; flex-direction: column;">
-    
-            <br>
-        
-            <div style="width:100%; height:10%; text-align: center;">
-                <h1>
-                    <span>Wins: {{ completedGames.wins }}</span>
-                    <span style="margin:10%;">Draws: {{ completedGames.draws }}</span>
-                    <span>Losses: {{ completedGames.losses }}</span>
-                </h1>
+    <div class="centeredContent">
+        <div style="display:flex; flex-direction: column; align-items: center; justify-content:flex-start; width:50%; height:95%;">
+            
+            <div style="display: flex; flex-direction: row; flex-basis: 10%; flex-shrink:0; width: 100%; text-align:center; justify-content: center;">
+                    <div style="flex-basis:33%;">
+                        <h1>Wins: {{ completedGames.wins }}</h1>
+                    </div>
+                    
+                    <div style="flex-basis:33%;">
+                        <h1 style="margin-left:10%; margin-right: 10%;">Draws: {{ completedGames.draws }}</h1>
+                    </div>
+                    
+                    <div style="flex-basis:33%;">
+                        <h1>Losses: {{ completedGames.losses }}</h1>
+                    </div>
             </div>
 
-            <div style="display:flex; flex-direction:row; width:100%; height:89%;">
-
-                <div style="width:50%;height:100%; overflow:auto; border:solid; border-color:aliceblue; border-radius:15px; margin-right:5px;">
-                
-                    <div style="width:100%; text-align: center;">
-                        <h2>Local Games:</h2>
-                    </div>
-
-                    {% if localGames %}
-                        <table style="width:100%; text-align: center; font-size: 18px; font-weight:bold;">
-                            
-                                {% for game in localGames %}
-                                    <tr><td><a href="{% url 'localGame' %}?room={{game.roomCode}}">Room {{ game.roomCode }}</a></td></tr>
-                                {% endfor %}
-
-                        </table>
-
-                    {% else %}
-
-                            <div style="width:100%; font-size:24px; text-align: center;">No local games to show!</div>
-                            <div style="width:100%; text-align:center;">
-                                <h3>
-                                    <a href="{% url 'play' %}">Try starting a new game here!</a>
-                                </h3>
-                            </div>
-
-                    {% endif %}
-
-                </div>
-
-
-                <div style="width:50%;height:100%; overflow:auto; border:solid; border-color:aliceblue; border-radius:15px; margin-left:5px;">
-                    
-                    <div style="width:100%; text-align: center;">
-                        <h2>Network Games:</h2>
-                    </div>
-
-                    {% if networkGames %}
-
-                        <table style="table-layout: fixed; width:100%; text-align: center; font-size: 18px; font-weight:bold;">
-                            {% for game in networkGames %}
-                                <tr>
-                                    <td style="white-space: nowrap; min-width:33%;">
-                                        <a href="{% url 'networkGame' %}?room={{game.roomCode}}">Room {{ game.roomCode }}</a>
-                                    </td>
-                                    <td  style="white-space: nowrap; overflow:hidden; text-overflow:ellipsis">
-                                        {% if game.player2 %}
-
-                                            {% if request.user == game.player1 %}
-                                                Against: {{ game.player2 }}
-                                            {% else %}
-                                                Against: {{ game.player1 }}
-                                            {% endif %}
-
-                                        {% else %}
-
-                                            Waiting on second player
-
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </table>
-
-                    {% else %}
-
-                        <div style="width:100%; font-size:24px; text-align: center;">No network games to show</div>
-                        <div style="width:100%; text-align:center;">
-                            <h3>
-                                <a href="{% url 'play' %}">Try starting a new game here!</a>
-                            </h3>
+            <div style="display:flex; flex-direction:row; flex-basis:85%; flex-shrink:1; flex-grow:1; width:100%; max-height:85%;">
+                    <div style="display:flex; flex-direction: column; flex-basis:50%; text-align: center; overflow:scroll; border:solid; border-color:aliceblue; border-radius:15px; margin-right:5px;">
+                        <div style="flex-basis:10%;">
+                            <h2>Local Games:</h2>
                         </div>
 
-                    {% endif %}
+                        {% if localGames %}
+                            {% for game in localGames %}
+                                <div style="flex-basis:5%; font-size:24px; font-weight: bold; margin-top:5px;">
+                                    <a href="{% url 'localGame' %}?room={{game.roomCode}}">Room {{ game.roomCode }}</a>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div>
+                                <h3>No local games to show!</h3>
+                            </div>
+                            <div>
+                                <h3><a href="{% url 'play' %}">Try starting a new one here!</a></h3>
+                            </div>
+                        {% endif %}
 
-                </div>
- 
+
+                    </div>
+                    <div style="display:flex; flex-direction: column; flex-basis:50%; text-align: center; overflow:scroll; border:solid; border-color:aliceblue; border-radius:15px; margin-left:5px;">
+                        <div style="flex-basis:10%;">
+                            <h2>Network Games:</h2>
+                        </div>
+
+                        {% if networkGames %}
+                            {% for game in networkGames %}
+                                <div style="display:flex; flex-direction:row; flex-basis:5%; align-items: center; margin-top:5px;">
+                                    <div style="flex-basis:40%; font-size:24px; font-weight:bold;"><a href="{% url 'localGame' %}?room={{game.roomCode}}">Room {{ game.roomCode }}</a></div>
+                                    
+                                    {% if game.player2 %}
+                                    
+                                        {% if request.user == game.player1 %}
+                                            <div style="flex-basis:60%; font-size:24px;">Against: <span style="font-weight: bold;">{{ game.player2 }}</span></div>
+                                        {% else %}
+                                            <div style="flex-basis:60%; font-size:24px;">Against: <span style="font-weight: bold;">{{ game.player1 }}</span></div>
+                                        {% endif %}
+                                    
+                                    {% else %}
+                                        <div style="flex-basis:60%; font-size:24px;">
+                                            Waiting on player
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div>
+                                <h3>No network games to show!</h3>
+                            </div>
+                            <div>
+                                <h3><a href="{% url 'play' %}">Try starting a new one here!</a></h3>
+                            </div>
+                        {% endif %}
+                    </div>
             </div>
-
-
         </div>
     </div>
 {% endblock %}

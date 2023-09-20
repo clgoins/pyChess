@@ -9,13 +9,20 @@ pyChess Home
 {% block body %}
 
     <style>
-        td {
-            height:24px;
+
+        .infoTable {
+            width:65%;
+        }
+
+        @media (max-width:1500px) {
+            .infoTable{
+                width:90%;
+            }
         }
     </style>
 
     <div class="centeredContent">
-        <div style="display:flex; flex-direction: column; align-items: center; justify-content:flex-start; width:50%; height:95%;">
+        <div class="infoTable" style="display:flex; flex-direction: column; align-items: center; justify-content:flex-start; height:95%;">
             
             <div style="display: flex; flex-direction: row; flex-basis: 10%; flex-shrink:0; width: 100%; text-align:center; justify-content: center;">
                     <div style="flex-basis:33%;">

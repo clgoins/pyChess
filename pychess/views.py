@@ -91,6 +91,16 @@ def register(request):
         password = request.POST['password']
         passwordConfirm = request.POST['passwordConfirm']
 
+        # Make sure the username field is not left blank
+        if username == "":
+            return render(request, 'pychess/register.html', {"message":"Username field cannot be left blank."})
+
+        # Do the same for the password field
+        if password == "":
+            return render(request, 'pychess/register.html', {"message":"Password field cannot be left blank."})
+
+        # If this were going to be a real website; this is probably where I should check that the password has a minimum number of characters; uppercase, numbers, special characters, etc.
+
         # Make sure the password matches the confirmation password
         if(password != passwordConfirm):
             return render(request, 'pychess/register.html', {"message":"Passwords do not match."})

@@ -46,7 +46,12 @@ pyChess Home
 
                     {% else %}
 
-                            <div style="width:100%; font-size:24px; text-align: center;">No local games to show</div>
+                            <div style="width:100%; font-size:24px; text-align: center;">No local games to show!</div>
+                            <div style="width:100%; text-align:center;">
+                                <h3>
+                                    <a href="{% url 'play' %}">Try starting a new game here!</a>
+                                </h3>
+                            </div>
 
                     {% endif %}
 
@@ -89,6 +94,11 @@ pyChess Home
                     {% else %}
 
                         <div style="width:100%; font-size:24px; text-align: center;">No network games to show</div>
+                        <div style="width:100%; text-align:center;">
+                            <h3>
+                                <a href="{% url 'play' %}">Try starting a new game here!</a>
+                            </h3>
+                        </div>
 
                     {% endif %}
 

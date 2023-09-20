@@ -59,7 +59,16 @@ Review
 
     {% else %}
 
-        No games to review! <a href="{% url 'play' %}">Try playing a few first!</a>
+        <div style="text-align: center; margin: 2%;">
+            <H1>No games to review!</H1>
+            <h3><a href="{% url 'play' %}">Try starting a new game here!</a></h3>
+        </div>
+        
+        <br><br>
+
+            
+
+         
 
     {% endif %}
 

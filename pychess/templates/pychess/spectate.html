@@ -6,31 +6,49 @@ Spectate
 
 {% block body %}
 
-<div class="centeredContent" style="align-items:start;">
-    <div style="display:flex; flex-direction: column;">
+    <style>
+        .container{
+            display:flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            margin-top:5%;
+        }
+
+        .infoHeader{
+            font-size:36px;
+            font-weight:bold;
+        }
+
+        .formItem{
+            font-size:24px;
+            height:1.5em;
+            margin-top:20px;
+            text-align:center;
+        }
+    </style>
 
 
-        {% if message %}
-                    <div class="errorMessage">
-                            <strong>{{ message }}</strong>
-                    </div>
-        {% endif %}
+    {% if message %}
+                <div class="errorMessage">
+                        <strong>{{ message }}</strong>
+                </div>
+    {% endif %}
 
+
+    <div class="container">
         
+        <div class="infoHeader">Enter a room code:</div>
 
-        <div style="text-align: center; margin-top:10%;">
-            <h2>Enter a room code:</h2>
-        </div>
+        <form method="post" action="{% url 'spectate' %}">
+            <div class="formItem">
+            <input class="formItem" type="text" name="roomCode" placeholder="Room Code">
+            <br><br>
+            <input class="formItem" type="submit" value="Spectate">
+            {% csrf_token %}
+            </div>
+        </form>
 
-        <div class="loginForm">
-            <form method="post" action="{% url 'spectate' %}">
-                <input class="loginInput" type="text" name="roomCode" placeholder="Room Code">
-                <br><br>
-                <input class="loginInput" type="submit" value="Spectate">
-                {% csrf_token %}
-            </form>
-        </div>
     </div>
-</div>
 
 {% endblock %}

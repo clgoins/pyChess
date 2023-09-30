@@ -8,34 +8,48 @@ pyChess Login
 
 
 {% block body %}
-    <div class="centeredContent" style="align-items:start;">
-        <div style="display:flex; flex-direction: column;">
 
-            {% if message %}
-            <div class="errorMessage">
-                    <strong>{{ message }}</strong>
-            </div>
-            {% endif %}
+    <style>
+        .formContainer{
+            display:flex;
+            flex-direction:column;
+            align-items: center;
+            justify-content: center;
+        }
 
-            <div>
-                <h1>Welcome to pyChess!</h1>
-            </div>
+        .formItem{
+            display:flex;
+            align-items: center;
+            justify-content: center;
+            margin-top:10px;
+            font-size:18px;
+            height:1.5em;
+            text-align: center;
+        }
+    </style>
 
-            <div class="loginForm">
-                <form action="{% url 'login' %}" method="POST">
-                    <div style="color:white">Username:</div>
-                    <input class="loginInput" type="text" name="username"><br>
-                    <br>
-                    <div style="color:white">Password:</div>
-                    <input class="loginInput" type="password" name="password"><br>
-                    <br>
-                    <input class="loginInput" type="submit" value="Login">
-                    {% csrf_token %}
-                </form>
-                <br>
-                <div>Don't have an account? <a href="{% url 'register' %}">Register Here.</a></div>
-            </div>
-
-        </div>
+    {% if message %}
+    <div class="errorMessage">
+            <strong>{{ message }}</strong>
     </div>
+    {% endif %}
+
+
+
+    <div class="formContainer">
+
+        <h1>Welcome to pyChess!</h1>
+
+        <form action="{% url 'login' %}" method="POST">
+            <div class="formItem">Username:</div>
+            <input class="formItem" type="text" name="username">
+            <div class="formItem">Password:</div>
+            <input class="formItem" type="password" name="password">
+            <div class="formItem"><input class="formItem" type="submit" value="Login"></div>
+            {% csrf_token %}
+        </form>
+
+        <div class="formItem">Don't have an account? &nbsp; <a href="{% url 'register' %}">Register Here.</a></div>
+    </div>
+
 {% endblock %}

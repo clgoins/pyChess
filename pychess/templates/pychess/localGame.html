@@ -8,25 +8,39 @@ Play Chess!
 
 
 {% block body %}
-        <div class="centeredContent">
-            <div class="main">
-                <div class="game">
-                    <div class="boardContainer" id="boardContainer">
 
-                    </div>
+    <style>
+       @media (max-width:1500px) {
+            .main {
+                flex-direction: column;
+            }
+
+            .pieceImg{
+                width:70%;
+                height:60%;
+            }
+        }
+    </style>
+
+    <div class="centeredContent">
+        <div class="main">
+            <div class="game">
+                <div class="boardContainer" id="boardContainer">
+
                 </div>
-                <div class="info">
-                    <div class="infoTop">
-                        <h2 id="status">
-                            <strong id="player"></strong> to move
-                        </h2>
-                    </div>
-                    <div class="infoBottomLocal" id="moveList">
+            </div>
+            <div class="info">
+                <div class="infoTop">
+                    <h2 id="status">
+                        <strong id="player"></strong> to move
+                    </h2>
+                </div>
+                <div class="infoBottomLocal" id="moveList">
 
-                    </div>
                 </div>
             </div>
         </div>
+    </div>
 
 
 
@@ -158,7 +172,7 @@ Play Chess!
                     //create an image tag for each piece
                     const image = document.createElement("img");
                     image.src=`/static/pychess/images/${pieces[i]['type']}_${pieces[i]['color']}.png`
-                    image.style = "width: 75%; height: 75%;"
+                    image.className = "pieceImg";
                     
                     //when the piece is clicked, call clickPiece() and pass in i as the id number
                     image.addEventListener('click', () => clickPiece(i), {signal:killClickHandlers.signal});

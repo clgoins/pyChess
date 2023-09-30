@@ -8,50 +8,66 @@ Play chess!
 
 {% block body %}
     
+    <style>
+        .links{
+            display:flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            margin-top:5%;
+        }
+
+        .form{
+            display:none; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            margin-top:5%;
+        }
+
+        .infoHeader{
+            font-size:36px;
+            font-weight:bold;
+        }
+
+        .linkItem{
+            font-size:24px;
+            font-weight:bold;
+            margin-top:20px;
+        }
+
+        .formItem{
+ 
+            font-size:24px;
+            height:1.5em;
+            margin-top:20px;
+        }
+
+    </style>
+
     {% if message %}
         <div class="errorMessage">
             <strong>{{ message }}</strong>
         </div>
     {% endif %}
 
-    <div class="centeredContent" style="align-items: start; font-size:36px;" id="main">
-
-        <div id="links" style="display:block">
-            <div style="display:flex; flex-direction: column; justify-content: center; align-items: center; margin-top:5%;">
-                <div>
-                    <h2>Start or Join a game</h2>
-                </div>
-                <div style="margin:15px;">
-                    <a href="{% url 'localGame' %}">New Local Game</a>
-                </div>
-                <div style="margin:15px;">
-                    <a href="{% url 'networkGame' %}">New Network Game</a>
-                </div>
-                <div style="margin:15px;">
-                    <a href="#" id="join">Join Network Game</a>
-                </div>
-            </div>
+        <div id="links" class="links">
+            <div class="infoHeader">Start or Join a game:</div>
+            <a class="linkItem" href="{% url 'localGame' %}">New Local Game</a>
+            <a class="linkItem" href="{% url 'networkGame' %}">New Network Game</a>
+            <a class="linkItem" href="#" id="join">Join Network Game</a>
         </div>
         
-        <div id="form" style="display:none;">
-            <div style="display:flex; flex-direction: column; justify-content: center; align-items: center; margin-top:5%;">
-                
-                <div><h2>Enter Room Code:</h2></div>
-                <div>
-                    <form method="POST" style="display: grid; grid-template-rows: 2em; grid-template-columns: 1fr auto;">
-                        <input style="height:36px; width:200px; text-align:center; font-size:24px; font-weight: bold;" type="text" name="roomCode" maxlength="6" placeholder="ROOM CODE">
-                        <input style="height:40px; margin-left:10px" type="submit" value="Join Game">
-                        {% csrf_token %}
-                    </form>
-                </div>
-                <div>
-                    <button id="back" style="height:36px;">Go Back</button>
-                </div>
-            </div>
+        <div id="form" class="form">
+            <div class="infoHeader">Enter room code:</div> 
+            <form method="POST">
+                <input class="formItem" type="text" name="roomCode" maxlength="6" placeholder="ROOM CODE">
+                <input class="formItem" type="submit" value="Join Game">
+                {% csrf_token %}
+            </form>
+            <button class="formItem" id="back">Go Back</button>
         </div>
 
-
-    </div>
 
 
     <script>
@@ -66,7 +82,7 @@ Play chess!
 
         function back()
         {
-            document.querySelector("#links").style.display = "block";
+            document.querySelector("#links").style.display = "flex";
             document.querySelector("#form").style.display = "none"; 
         }
 

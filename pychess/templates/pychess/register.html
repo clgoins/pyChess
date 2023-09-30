@@ -7,43 +7,51 @@ Register for pyChess
 {% endblock %}
 
 {% block body %}
-    <div class="centeredContent" style="align-items:start;">
-        
-        <div style="display:flex; flex-direction: column;">
+    <style>
+        .formContainer{
+            display:flex;
+            flex-direction:column;
+            align-items: center;
+            justify-content: center;
+        }
 
-            {% if message %}
-                <div class="errorMessage">
-                    {{ message }}
-                </div>
-            {% endif %}
+        .formItem{
+            display:flex;
+            align-items: center;
+            justify-content: center;
+            margin-top:10px;
+            font-size:18px;
+            height:1.5em;
+            text-align: center;
+        }
+    </style>
 
-            <div>
-                <h1> Register for new account </h1>
-            </div>
-            
-            <div class="loginForm">
-                <form action="{% url 'register' %}" method="POST">
-                    <div style="color:white">Username:</div>
-                    <input class="loginInput" type="text" name="username" placeholder="Username"><br>
-                    <br>
-                    <div style="color:white">Email Address:</div>
-                    <input class="loginInput" type="text" name="email" placeholder="Email (Optional)"><br>
-                    <br>
-                    <div style="color:white">Password:</div>
-                    <input class="loginInput" type="password" name="password" placeholder="Password"><br>
-                    <br>
-                    <div style="color:white">Confirm Password:</div>
-                    <input class="loginInput" type="password" name="passwordConfirm" placeholder="Confirm Password"><br>
-                    <br>
-                    <input class="loginInput" type="submit" value="Create Account">
-                    {% csrf_token %}
-                </form>
-                <br>
-                <div>Already have an account? <a href="{% url 'login' %}">Login Instead.</a></div>
-            </div>
-        
-        </div>
+    {% if message %}
+    <div class="errorMessage">
+            <strong>{{ message }}</strong>
     </div>
+    {% endif %}
 
+
+
+    <div class="formContainer">
+        <h1> Register for a new pyChess account </h1>
+
+        <form action="{% url 'register' %}" method="POST">
+            <div class="formItem">Username:</div>
+            <input class="formItem" type="text" name="username" placeholder="Username">
+            <div class="formItem">Email Address:</div>
+            <input class="formItem" type="text" name="email" placeholder="Email (Optional)">
+            <div class="formItem">Password:</div>
+            <input class="formItem" type="password" name="password" placeholder="Password">
+            <div class="formItem">Confirm Password:</div>
+            <input class="formItem" type="password" name="password" placeholder="Confirm Password">
+            <div class="formItem"><input class="formItem" type="submit" value="Create Account"></div>
+            {% csrf_token %}
+        </form>
+
+        <div class="formItem">Already have an account? <a href="{% url 'login' %}">Login Here.</a></div>
+
+    </div>
 
 {% endblock %}

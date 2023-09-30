@@ -11,95 +11,48 @@ a:hover {
     background-color: aliceblue;
 }
 
+/*===== Main Content Window =====*/
 
-
-/*===== Header, navbar, and footer =====*/
+.screen {
+    display:flex;
+    flex-direction: column;
+    width:98vw;
+    height:100vh;
+}
 
 .header {
-    height:10vh;
-    width:100%;
-    min-height:80px;
-    min-width:1008px;
     color:aliceblue;
-    position: relative;
-    float: left;
-    margin-bottom: 1vh;
-}
-
-.mainHeading {
-    position:relative;
-    font-size: max(24px,3vh); 
-    font-weight: bold; 
-    text-indent:10px;
-    float:left;
-}
-
-.subHeading {
-    float:left;
-    clear:both;
-    font-size: max(12px,1.5vh);
-    text-indent: 10px;
-}
-
-.navbar {
-    clear:both;
-    border-bottom: solid;
-    border-top: solid;
-    border-color: aliceblue;
+    display:flex;
+    flex-direction:column;
     width:100%;
-    position:absolute;
-    bottom:0;
-    padding:5px;
+    flex-basis:10%;
+    flex-grow:0;
+    flex-shrink:0;
+    border-bottom:solid;
+    border-color:aliceblue;
 }
 
-.navlink {
-    padding-left:20px;
-    padding-right:20px;
-    font-weight:bold;
-    border-left: solid;
-    border-right:solid;
-    border-color:aliceblue;
+.content {
+    color:aliceblue;
+    display:flex;
+    flex-direction:column;
+    width:100%;
+    flex-basis:85%;
+    flex-grow:0;
+    flex-shrink:1;
 }
 
 .footer {
-    height:5vh;
-    min-height:24px;
-    min-width:1008px;
-    text-align: center;
     color:aliceblue;
-    border-top:solid;
-    border-color:aliceblue;
-}
-
-
-
-/*===== Main Content Divs =====*/
-
-.content {
-    clear:both;
-    height: 85vh;
-    min-height:412px;
-    min-width:1008px;
-    color:aliceblue;
-}
-
-.centeredContent {
-    height:85vh;
-    min-height:412px;
-    min-width:1008px;
     display:flex;
+    flex-basis:5%;
+    flex-grow:0;
+    flex-shrink:1;
     justify-content: center;
-    align-items: center;
-}
-
-.loginForm {
-    font-size:20px;
-    text-align:center;
-}
-
-.loginInput {
-    font-size:20px;
-    text-align:center;
+    align-items:center;
+    text-align: center;
+    border-top: solid;
+    border-color:aliceblue;
 }
 
 .errorMessage {
@@ -110,16 +63,65 @@ a:hover {
     border-color:red; 
     border-radius: 10px; 
     text-align: center;
+    margin-top:10px;
 }
 
-.tableScroller
-{
-    height:100%;
-    margin-bottom:5%;
-    overflow:auto;
-    border:solid;
-    border-color:aliceblue;
-    border-radius: 15px;
+/*===== Main Header banner && navbar =====*/
+.mainHeader {
+    color:aliceblue;
+    display:flex;
+    flex-basis:50%;
+    font-size:32px;
+    font-weight:bold;
+    align-items:center;
+    padding-left:10px;
+}
+
+.subHeader {
+    color:aliceblue;
+    display:flex;
+    flex-basis:25%;
+    font-size:16px;
+    font-weight: bold;
+    align-items:center;
+    padding-left:20px;
+
+}
+
+.navBar {
+    display:flex;
+    flex-direction:row;
+    flex-basis:25%;
+    align-items:center;
+}
+
+.navLink {
+    font-weight:bold;
+    border-left:solid;
+    border-right:solid;
+    padding-left:5px;
+    padding-right:5px;
+    margin-right:5px;
+}
+
+
+/* Adjust font sizes for phone screens or other tall devices */
+@media (min-height: 1500px) {
+    .mainHeader{
+        font-size:44px;
+    }
+
+    .subHeader{
+        font-size:24px;
+    }
+
+    .navLink{
+        font-size:24px;
+    }
+
+    .errorMessage{
+        font-size:24px;
+    }
 }
 
 
@@ -144,8 +146,7 @@ a:hover {
     display:flex;
     height:95%;
     width:66%;
-    min-width:665px;
-    min-height:392px;
+
 }
 
 .game {
@@ -158,8 +159,10 @@ a:hover {
 }
 
 .boardContainer {
-    width: 100%;
+    max-height: 100%;
     aspect-ratio: 1/1;
+    flex-grow:1;
+    flex-shrink:1;
 }
 
 .board {
@@ -180,6 +183,8 @@ a:hover {
     width:12.5%;
     min-width:12.5%;
     max-width:12.5%;
+    height:auto;
+    aspect-ratio: 1/1;
     text-align: center;
 }
 
@@ -188,7 +193,14 @@ a:hover {
     width:12.5%;
     min-width:12.5%;
     max-width:12.5%;
+    height:auto;
+    aspect-ratio: 1/1;
     text-align: center;
+}
+
+.pieceImg {
+    width: 75%;
+    height: 75%;
 }
 
 .info {

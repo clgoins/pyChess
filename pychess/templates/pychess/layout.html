@@ -6,38 +6,44 @@
         <title>{% block title %}{% endblock %}</title>
         <link rel="stylesheet" href="{% static 'pychess/styles.css' %}">
     </head>
+
     <body>
-        <div class="header">
-            <div class="mainHeading">pyChess</div>
-            {% if user.is_authenticated %}
-                <div class="subHeading">
-                    You are logged in as <strong>{{ user }}</strong>
+        <div class="screen">
+            <div class="header">
+                <div class="mainHeader">
+                    pyChess
                 </div>
-            {% else %}
-                <div class="subHeading">
-                    You are not logged in
+                <div class="subHeader">
+                    {% if user.is_authenticated %}
+                        Logged in as: &nbsp;<strong>{{ user }}</strong>
+                    {% else %}
+                        You are not logged in
+                    {% endif %}
                 </div>
-            {% endif %}
-            <div class="navbar">
-                {% if user.is_authenticated %}
-                    <a class="navlink" href="{% url 'index' %}">Home</a>
-                    <a class="navlink" href="{% url 'play' %}">Play</a>
-                    <a class="navlink" href="{% url 'review' %}">Review</a>
-                    <a class="navlink" href="{% url 'spectate' %}">Spectate</a>
-                    <a class="navlink" href="{% url 'logout' %}">Logout</a>
-                {% else %}
-                    <a class="navlink" href="{% url 'login' %}">Login</a>
-                    <a class="navlink" href="{% url 'register' %}">Register</a>
-                    <a class="navlink" href="{% url 'spectate' %}">Spectate</a>
-                {% endif %}
+                <div class="navBar">
+                    {% if user.is_authenticated %}
+                        <div class="navLink"><a href="{% url 'index' %}">Home</a></div>
+                        <div class="navLink"><a href="{% url 'play' %}">Play</a></div>
+                        <div class="navLink"><a href="{% url 'review' %}">Review</a></div>
+                        <div class="navLink"><a href="{% url 'spectate' %}">Spectate</a></div>
+                        <div class="navLink"><a href="{% url 'logout' %}">Logout</a></div>
+                    {% else %}
+                        <div class="navLink"><a href="{% url 'login' %}">Login</a></div>
+                        <div class="navLink"><a href="{% url 'register' %}">Register</a></div>
+                        <div class="navLink"><a href="{% url 'spectate' %}">Spectate</a></div>
+                    {% endif %}
+                </div>
             </div>
-        </div>
-        <div class="content">
-        {% block body %}
-        {% endblock %}
-        </div>
-        <div class="footer">
-            <h3>a cs50 project by Chris Goins</h3>
+
+            <div class="content">
+                {% block body %}
+
+                {% endblock %}
+            </div>
+
+            <div class="footer">
+                <h3>a cs50 project by Chris Goins</h3>
+            </div>
         </div>
     </body>
 </html>

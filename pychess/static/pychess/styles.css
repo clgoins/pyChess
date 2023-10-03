@@ -142,144 +142,125 @@ a:hover {
 
 /*===== Everything below this pertains to the game board =====*/
 
-.main {
-    display:flex;
-    height:95%;
-    width:66%;
+.gameContainer {
 
+    display:flex;
+    flex-direction:column;
+    flex-basis:100%;
+    align-content: center;
+    justify-content: center;
 }
+
+
+
 
 .game {
     display:flex;
-    width:60%;
-    margin:10px;
-    margin-right:5px;
-    align-items: center;
-    justify-content: center;
+    flex-direction: row;
+    flex-grow:0;
+    flex-shrink:1;
+    flex-basis:90%;
+    width:66%;
+    align-self:center;
 }
 
 .boardContainer {
-    max-height: 100%;
-    aspect-ratio: 1/1;
-    flex-grow:1;
-    flex-shrink:1;
+    flex: 1;
+    flex-basis:66%;
+    display:flex;
+    flex-direction:column;
+    align-items: center;
+    justify-content: center;
+    background-color:orange;
 }
 
 .board {
-    table-layout: fixed;
-    height: 100%;
-    width: 100%;
+    background-color:yellow;
+    width:80%;
+    height:auto;
+    flex-basis: 80%;
+    flex: 1;
+    display:flex;
+    flex-direction: column;
 }
 
 .boardRow {
-    height: 12.0%;
-    min-height: 12.0%;
-    max-height: 12.0%;
+    display:flex;
+    flex-direction:row;
+    width:100%;
+    flex-basis:12.5%;
+    flex: 1;
+
+}
+
+.lightCell{
+    display:flex;
+    background-color: #b3a58f;
+    flex-basis:12.5%;
+    flex: 1;
     overflow:hidden;
 }
 
-.lightCell {
-    background-color: #b3a58f;
-    width:12.5%;
-    min-width:12.5%;
-    max-width:12.5%;
-    height:auto;
-    aspect-ratio: 1/1;
-    text-align: center;
-}
-
-.darkCell {
+.darkCell{
+    display:flex;
     background-color: #30538c;
-    width:12.5%;
-    min-width:12.5%;
-    max-width:12.5%;
-    height:auto;
-    aspect-ratio: 1/1;
-    text-align: center;
+    flex-basis:12.5%;
+    flex: 1;
+    overflow:hidden;
 }
 
-.pieceImg {
-    width: 75%;
-    height: 75%;
+.pieceImg{
+    height:80%;
+    width:80%;
 }
 
 .info {
+    background-color: red;
     display:flex;
-    flex-direction:column;
-    width:40%;
-
-    margin:10px;
-    margin-left:5px;
+    flex-direction: column;
+    flex-grow:0;
+    flex-shrink:0;
+    flex-basis:33%;
+    align-items: center;
+    justify-content: center;
+    border:solid;
+    border-color:aliceblue;
+    border-radius:15px;
 }
 
 .infoTop {
-    display:flex;
-    flex-basis:auto;
-    flex-grow:0;
-    height:15%;
     width:100%;
+    display:flex;
     align-items: center;
     justify-content: center;
-    border:solid;
-    border-radius: 12px;
-    border-color: aliceblue;
-    color: aliceblue;
-}
-
-.infoMid {
-    display:flex;
-    flex-basis:auto;
     flex-grow:0;
-    flex-direction: column;
-    height:10%;
-    width:100%;
-    justify-content:center;
-    align-items: center;
-    border:solid;
-    border-radius: 12px;
-    border-color: aliceblue;
-    color: aliceblue;
+    flex-shrink: 0;
+    flex-basis: 15%;
+    border-bottom:solid;
+    font-size:24px;
     font-weight: bold;
 }
 
-.infoBottomNetwork {
-    display:flex;
-    flex-direction:column;
-    flex-basis:75%;
-    flex-shrink:0;
-    width:100%;
-    border:solid;
-    border-radius: 12px;
-    border-color: aliceblue;
-    color: aliceblue;
-    overflow:auto;
-}
-
 .infoBottomLocal {
+    width:100%;
     display:flex;
     flex-direction:column;
-    flex-basis:85%;
-    flex-shrink:0;
-    width:100%;
-    border:solid;
-    border-radius: 12px;
-    border-color: aliceblue;
-    color: aliceblue;
-    overflow:auto;
+    flex-grow:0;
+    flex-shrink: 0;
+    flex-basis:82%;
+    overflow-y: auto;
 }
 
 .moveCard {
-    display: flex;
-    width:95%;
-    height:10%;
+    background-color:rgb(0, 78, 174);
+    width:100%;
+    display:flex;
+    flex-basis:10%;
     flex-grow:0;
     flex-shrink:0;
-    flex-basis:auto;
-    justify-content: center;
     align-items: center;
-    margin-left: auto;
-    margin-right: auto;
+    justify-content: center;
     margin-top:3px;
-    background-color:rgb(0, 78, 174);
 }
+
 

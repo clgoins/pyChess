@@ -7,32 +7,67 @@ Play Chess!
 
 
 {% block body %}
-        <div class="centeredContent">
-            <div class="main">
-                <div class="game">
-                    <div class="boardContainer" id="boardContainer">
 
-                    </div>
+<style>
+    @media (max-width:1000px)
+    {
+        .game{
+            flex-direction:column;
+            aspect-ratio: 9/16;
+        }
+    
+        .info{
+            max-height:33%;
+            max-width:100%;
+        }
+
+        .infoTop{
+            flex-basis:30%;
+        }
+
+        .infoMid{
+            flex-basis:30%;
+        }
+
+        .infoBottomNetwork{
+            flex-basis:40%;
+        }
+    }
+
+    @media (max-height:500px)
+{
+    .infoBottomNetwork{
+        display:none;
+    }
+    .infoTop{
+        flex-basis:50%;
+    }
+    .infoMid{
+        flex-basis:50%;
+    }
+}
+</style>
+    
+<div class="gameContainer">
+        <div class="game">
+            <div class="boardContainer" id="boardContainer">
+
+            </div>
+            <div class="info">
+                <div class="infoTop" id="status">
+                        Waiting for player
                 </div>
-                <div class="info">
-                    <div class="infoTop">
-                        <h2 id="status">
-                            Waiting for player
-                        </h2>
-                    </div>
-                    <div class="infoMid">
-                        <div>Playing as <span id=color></span></div>
-                        <div style="max-width:75%; overflow:hidden; text-align: center; text-overflow: ellipsis; text-wrap: nowrap;">Playing against: <span id=opponent></span></div>
-                        <div>Room code: {{ roomCode }}</div>
-                    </div>
-                    <div class="infoBottomNetwork" id="moveList">
-                        <div class="moveCard" style="height:50px;">Your room code is {{ roomCode }}<br>Send it to your friend to let them join!</div>
-                    </div>
+                <div class="infoMid">
+                    <div>Playing as <span id=color></span></div>
+                    <div style="max-width:75%; overflow:hidden; text-align: center; text-overflow: ellipsis; text-wrap: nowrap;">Playing against: <span id=opponent></span></div>
+                    <div>Room code: {{ roomCode }}</div>
+                </div>
+                <div class="infoBottomNetwork" id="moveList">
+                    <div class="moveCard">Your room code is {{ roomCode }}<br>Send it to your friend to let them join!</div>
                 </div>
             </div>
         </div>
-
-
+</div>
 
 
     {% csrf_token %}
@@ -193,7 +228,7 @@ Play Chess!
         //renders the checkerboard pattern on the screen, in the form of an HTML table
         function drawBoard()
         {
-            let board = document.createElement("table");
+            let board = document.createElement("div");
             board.className = "board";
             let isLight=true;
 
@@ -201,12 +236,12 @@ Play Chess!
             if (gameState['player1'] == null || gameState['player1'] == "{{ request.user }}")
                 for (let i = 0; i < 8; i++)
                 {
-                    let row = document.createElement("tr");
+                    let row = document.createElement("div");
                     row.className = "boardRow";
 
                     for (let j = 0; j < 8; j++)
                     {
-                        let cell = document.createElement("td");
+                        let cell = document.createElement("div");
 
                         //HTML ID's cannot start with a number for some reason, so the id is prefixed with a 'p'
                         cell.id = `p${j}_${i}`;
@@ -234,12 +269,12 @@ Play Chess!
             {
                 for (let i = 7; i >= 0; i--)
                 {
-                    let row = document.createElement("tr");
+                    let row = document.createElement("div");
                     row.className = "boardRow";
 
                     for (let j = 7; j >= 0; j--)
                     {
-                        let cell = document.createElement("td");
+                        let cell = document.createElement("div");
 
                         //HTML ID's cannot start with a number for some reason, so the id is prefixed with a 'p'
                         cell.id = `p${j}_${i}`;
@@ -285,7 +320,7 @@ Play Chess!
                     //create an image tag for each piece
                     const image = document.createElement("img");
                     image.src=`/static/pychess/images/${pieces[i]['type']}_${pieces[i]['color']}.png`
-                    image.style = "width: 75%; height: 75%;"
+                    image.className = "pieceImg";
                     
                     //when the piece is clicked, call clickPiece() and pass in i as the id number
                     image.addEventListener('click', () => clickPiece(i), {signal:killClickHandlers.signal});
@@ -408,8 +443,15 @@ Play Chess!
 
                 //The chess engine will spit out a list of possible spaces the piece can move; this will highlight the legal moves in green.
                 moveList['validMoves'].forEach((move) => {
-                    cellToHighlight = document.querySelector(`#p${move[0]}_${move[1]}`);
-                    cellToHighlight.style.backgroundColor = 'springGreen';
+                    let cellToHighlight = document.querySelector(`#p${move[0]}_${move[1]}`);
+                    if (cellToHighlight.className == "lightCell")
+                    {
+                        cellToHighlight.style.backgroundColor = 'springGreen';
+                    }
+                    else if (cellToHighlight.className == "darkCell")
+                    {
+                        cellToHighlight.style.backgroundColor = 'seaGreen';
+                    }
                 })
             })
         }

@@ -263,6 +263,8 @@ a:hover {
     flex-shrink: 0;
     flex-basis:82%;
     overflow-y: auto;
+    overflow-x: hidden;
+    border-radius:15px;
 }
 
 .moveCard {

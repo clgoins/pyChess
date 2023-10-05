@@ -16,9 +16,10 @@ a:hover {
 .screen {
     display:flex;
     flex-direction: column;
-    width:98vw;
     height:100vh;
+    width:100vw;
 }
+
 
 .header {
     color:aliceblue;
@@ -40,6 +41,7 @@ a:hover {
     flex-basis:85%;
     flex-grow:0;
     flex-shrink:1;
+    min-height:350px;
 }
 
 .footer {
@@ -105,8 +107,8 @@ a:hover {
 }
 
 
-/* Adjust font sizes for phone screens or other tall devices */
-@media (min-height: 1500px) {
+/* Adjust font sizes for phones or other narrow high-resolution screens */
+@media (max-width:1200px) and (min-height:1500px) {
     .mainHeader{
         font-size:44px;
     }
@@ -151,17 +153,14 @@ a:hover {
     justify-content: center;
 }
 
-
-
-
 .game {
     display:flex;
     flex-direction: row;
-    flex-grow:0;
-    flex-shrink:1;
+    flex:0;
     flex-basis:90%;
-    width:66%;
+    width:auto;
     align-self:center;
+    aspect-ratio: 16/ 9;
 }
 
 .boardContainer {
@@ -171,51 +170,46 @@ a:hover {
     flex-direction:column;
     align-items: center;
     justify-content: center;
-    background-color:orange;
+    
 }
 
 .board {
-    background-color:yellow;
     width:80%;
     height:auto;
     flex-basis: 80%;
     flex: 1;
-    display:flex;
-    flex-direction: column;
+    display:grid;
+    grid-template-rows: 12.5% 12.5% 12.5% 12.5% 12.5% 12.5% 12.5% 12.5%;
+    aspect-ratio: 1/1;
 }
 
 .boardRow {
-    display:flex;
-    flex-direction:row;
+    display:grid;
+    grid-template-columns: 12.5% 12.5% 12.5% 12.5% 12.5% 12.5% 12.5% 12.5%;
     width:100%;
-    flex-basis:12.5%;
-    flex: 1;
-
 }
 
 .lightCell{
-    display:flex;
     background-color: #b3a58f;
-    flex-basis:12.5%;
-    flex: 1;
-    overflow:hidden;
+    display:flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .darkCell{
-    display:flex;
     background-color: #30538c;
-    flex-basis:12.5%;
-    flex: 1;
-    overflow:hidden;
+    display:flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .pieceImg{
-    height:80%;
-    width:80%;
+    width:100%;
+    height:auto;
+    display:block;
 }
 
 .info {
-    background-color: red;
     display:flex;
     flex-direction: column;
     flex-grow:0;

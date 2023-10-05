@@ -10,12 +10,13 @@ Play Chess!
 {% block body %}
 
 <style>
-    @media (max-width:1500px){
-        .game {
-            flex-direction:column;
-
-        }
+@media (max-width:1000px)
+{
+    .game{
+        flex-direction:column;
+        aspect-ratio: 9/16;
     }
+}
 </style>
 
 <div class="gameContainer">
@@ -23,7 +24,7 @@ Play Chess!
         <div class="boardContainer" id="boardContainer">
             <div class="board">
                 <div class="boardRow" style="background-color: yellowgreen;">
-                    <div class="lightCell"></div>
+                    <div class="lightCell"><img class="pieceImg" src="\static\pychess\images\bishop_dark.png"></div>
                     <div class="darkCell"></div>
                     <div class="lightCell"></div>
                     <div class="darkCell"></div>

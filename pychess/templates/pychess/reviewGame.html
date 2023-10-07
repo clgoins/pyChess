@@ -5,13 +5,60 @@ Review
 {% endblock %}
 
 {% block body %}
-<div class="centeredContent">
-    <div class="main">
-        <div class="game">
-            <div class="boardContainer" id="boardContainer">
 
-            </div>
+<style>
+    @media (max-aspect-ratio:1/1)
+    {
+        .game{
+            flex-direction:column;
+            aspect-ratio: 9/16;
+        }
+
+        .boardContainer{
+            flex-basis:50%;
+            max-height:50%;
+        }
+
+    
+        .info{
+            max-height:50%;
+            max-width:100%;
+            flex-basis:50%;
+        }
+
+        .infoBottomNetwork{
+            flex-basis:40%;
+        }
+
+        .board{
+            height:auto;
+            width:100%;
+        }
+    }
+
+    @media (max-aspect-ratio:1/1) and (max-height:750px)
+{
+    .infoBottom{
+        display:none;
+    }
+    .infoTop{
+        flex-basis:30%;
+    }
+    .infoMid{
+        flex-basis:30%;
+    }
+    .transportBar{
+        flex-basis:40%;
+    }
+}
+</style>
+
+<div class="gameContainer">
+    <div class="game">
+        <div class="boardContainer" id="boardContainer">
+
         </div>
+
         <div class="info">
             <div class="infoTop">
                 <h2 id="status">
@@ -23,7 +70,7 @@ Review
                 <div style="max-width:75%; overflow:hidden; text-align: center; text-overflow: ellipsis; text-wrap: nowrap;"><span id="p1"></span> vs <span id="p2"></span></div>
                 <div>Room code: <span id="roomCode"></span></div>
             </div>
-            <div class="infoBottomNetwork" style="flex-basis:60%" id="moveList">
+            <div class="infoBottom" style="flex-basis:60%" id="moveList">
                 
             </div>
             <div class="transportBar">
@@ -33,9 +80,9 @@ Review
                 <img class="transportButton" src="/static/pychess/images/button_next.png" id="nextButton">
             </div>
         </div>
-
     </div>
 </div>
+
 
 {% csrf_token %}
 
@@ -43,6 +90,9 @@ Review
 
     //All of the board state information is generated client side during review; to avoid needless database queries.
     //One call can be made at the start of the game to get the move list; and everything else can be done on the frontend.
+
+
+    window.addEventListener('resize', setBoardAspectRatio);
 
     var gameState = {};
     var gameID = "{{ gameID }}"
@@ -404,7 +454,25 @@ Review
         return [xPos, yPos];
     }
 
+    //Changes the way the board fits in the boardContainer when the window is resized.
+    //Want to ensure largest possible area while still maintaining 1/1 aspect ratio; without overflowing from parent container.
+    function setBoardAspectRatio()
+    {
+        let board = document.querySelector(".board");
+        let boardContainer = document.querySelector(".boardContainer");
 
+        if(boardContainer.clientHeight > boardContainer.clientWidth)
+        {
+            board.style.width = "100%";
+            board.style.height = "auto";
+        }
+        else
+        {
+            board.style.height = "100%";
+            board.style.width = "auto";
+        }
+
+    }
 
     //=====Event listeners for the transport buttons=======
     

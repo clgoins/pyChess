@@ -6,13 +6,57 @@ Spectate
 
 {% block body %}
 
-<div class="centeredContent">
-    <div class="main">
-        <div class="game">
-            <div class="boardContainer" id="boardContainer">
+<style>
+    @media (max-aspect-ratio:1/1)
+    {
+        .game{
+            flex-direction:column;
+            aspect-ratio: 9/16;
+        }
+    
+        .info{
+            max-height:33%;
+            max-width:100%;
+        }
 
-            </div>
+        .infoTop{
+            flex-basis:30%;
+        }
+
+        .infoMid{
+            flex-basis:30%;
+        }
+
+        .infoBottom{
+            flex-basis:40%;
+        }
+
+        .board{
+            height:auto;
+            width:100%;
+        }
+    }
+
+    @media (max-aspect-ratio:1/1) and (max-height:750px)
+{
+    .infoBottom{
+        display:none;
+    }
+    .infoTop{
+        flex-basis:50%;
+    }
+    .infoMid{
+        flex-basis:50%;
+    }
+}
+</style>
+
+<div class="gameContainer">
+    <div class="game">
+        <div class="boardContainer" id="boardContainer">
+
         </div>
+
         <div class="info">
             <div class="infoTop">
                 <h2 id="status">
@@ -21,23 +65,23 @@ Spectate
             </div>
             <div class="infoMid">
                 <div>Now spectating: </div>
-                <div style="max-width:75%; overflow:hidden; text-align: center; text-overflow: ellipsis; text-wrap: nowrap;"><span id="p1"></span> vs <span id="p2"></span></div>
+                <div class="userNameDisplay"><span id="p1"></span> vs <span id="p2"></span></div>
                 <div>Room code: <span id="roomCode"></span></div>
             </div>
-            <div class="infoBottomNetwork" id="moveList">
+            <div class="infoBottom" style="flex-basis:70%;" id="moveList">
                 
             </div>
         </div>
     </div>
 </div>
 
-
-
-
 {% csrf_token %}
 
 
 <script>
+
+    window.addEventListener('resize', setBoardAspectRatio);
+
     var gameState = {};
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     var gameID = "{{ gameID }}"
@@ -269,6 +313,26 @@ Spectate
     function sleep(ms)
     {
         return new Promise(resolve => setTimeout(resolve,ms));
+    }
+
+    //Changes the way the board fits in the boardContainer when the window is resized.
+    //Want to ensure largest possible area while still maintaining 1/1 aspect ratio; without overflowing from parent container.
+    function setBoardAspectRatio()
+    {
+        let board = document.querySelector(".board");
+        let boardContainer = document.querySelector(".boardContainer");
+
+        if(boardContainer.clientHeight > boardContainer.clientWidth)
+        {
+            board.style.width = "100%";
+            board.style.height = "auto";
+        }
+        else
+        {
+            board.style.height = "100%";
+            board.style.width = "auto";
+        }
+
     }
 </script>
 

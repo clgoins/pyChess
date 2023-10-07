@@ -10,7 +10,7 @@ Play Chess!
 {% block body %}
 
 <style>
-@media (max-width:1000px)
+@media (max-aspect-ratio:1/1)
 {
     .game{
         flex-direction:column;
@@ -20,6 +20,11 @@ Play Chess!
     .info{
         max-height:33%;
         max-width:100%;
+    }
+
+    .board{
+            height:auto;
+            width:100%;
     }
 }
 
@@ -33,7 +38,7 @@ Play Chess!
         </div>
         <div class="info">
             <div class="infoTop"><span id="player"></span>&nbsp;to move</div>
-            <div class="infoBottomLocal" id="moveList">
+            <div class="infoBottom" style="flex-basis:82%;" id="moveList">
 
             </div>
         </div>
@@ -43,6 +48,9 @@ Play Chess!
     {% csrf_token %}
 
 <script>
+
+    window.addEventListener('resize', setBoardAspectRatio);
+
     var gameState = {};
     var checkingMove = false;
     var activePiece = null;
@@ -389,6 +397,28 @@ Play Chess!
     {
         return new Promise(resolve => setTimeout(resolve,ms));
     }
+
+
+    //Changes the way the board fits in the board container when the window is resized.
+    //Want to ensure largest possible area while still maintaining 1/1 aspect ratio; without overflowing from parent container.
+    function setBoardAspectRatio()
+    {
+        let board = document.querySelector(".board");
+        let boardContainer = document.querySelector(".boardContainer");
+
+        if(boardContainer.clientHeight > boardContainer.clientWidth)
+        {
+            board.style.width = "100%";
+            board.style.height = "auto";
+        }
+        else
+        {
+            board.style.height = "100%";
+            board.style.width = "auto";
+        }
+
+    }
+
 </script>
 
 

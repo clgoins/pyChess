@@ -71,6 +71,12 @@ Review
 
 </style>
 
+{% if message %}
+<div class="errorMessage">
+        <strong>{{ message }}</strong>
+</div>
+{% endif %}
+
 <div class="pageHeader">
     {% if games %}
         Select a game to review:

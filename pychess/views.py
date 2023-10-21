@@ -128,21 +128,26 @@ def play(request):
     
     # POST request will come from user submitting a room code on the play page
     elif request.method == "POST":
-        # Get the request room code from POST data
-        roomCode = request.POST['roomCode']
+        # Get the room code from POST data
+        roomCode = request.POST['roomCode'].upper()
 
         # Check if a game exists with that code. If so, redirect to networkGame with that room code.
         if Game.objects.filter(roomCode=roomCode).exists():
             game = Game.objects.get(roomCode=roomCode)
             
             # If player1 == player2, the game is actually a local game. This Join form isn't really intended for rejoining local games, but there's no reason not to send the user to the right place.
-            if game.player1 != game.player2:
-                response = redirect('networkGame')
+            if game.player1 == game.player2:
+                response = redirect('localGame')
                 response['Location'] += f'?room={roomCode}'
                 return response
             
+            # If the game is a network game, but it's already full; refresh this page with an error message
+            elif game.player1 != request.user and game.player2 != request.user and game.player2 != None:
+                print("made it here")
+                return render(request, 'pychess/play.html', {"message":"Game is already full! Did you enter the correct room code?"})
+
             else:
-                response = redirect('localGame')
+                response = redirect('networkGame')
                 response['Location'] += f'?room={roomCode}'
                 return response
 
@@ -203,7 +208,6 @@ def networkGame(request):
                 game.save()
                 return render(request, 'pychess/networkGame.html', {'gameID':game.id, 'roomCode':room})
             
-            # TODO: If the user is not listed as a player, and the game is full already; redirect to the spectate page to join game as a spectator.
             else:
                 redirect(play)
     else:
@@ -263,7 +267,10 @@ def review(request):
 def reviewGame(request, roomCode):
 
     # Get some initial info from the provided roomCode to pass to the front end
-    game = Game.objects.get(roomCode=roomCode)
+    if Game.objects.filter(roomCode=roomCode).exists():
+        game = Game.objects.get(roomCode=roomCode)
+    else:
+        return redirect(review)
 
     return render(request,'pychess/reviewGame.html', {'gameID':game.id, 'roomCode':roomCode, 'player1':game.player1, 'player2':game.player2})
 

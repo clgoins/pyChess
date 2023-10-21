@@ -373,6 +373,9 @@ def submitMove(request):
         gameID = data.get('game')
 
         if(chessEngine.move(gameID, piece, position)):
+            # update the 'move' db with the pieces new position
+            newMove = Move(gameID = Game.objects.get(id=gameID), moveNumber = chessEngine.generateBoardState(gameID)['turnNumber'], pieceID = piece['id'], rankFile = chessEngine.coordToRankFile(position))
+            newMove.save()
             return JsonResponse({'message':'success'})
         else:
             return JsonResponse({'message':'failure'})

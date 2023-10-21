@@ -93,7 +93,7 @@ def checkPieceMoves(gameState, pieceID):
     # If the piece is a pawn or a king that has special moves; check whether those special moves are allowed here:
     if piece['type'] == 'pawn':
         
-        # *****Regular pawn capturing*******************************************
+        # *****Regular pawn capturing*************************
         checkLeft = piece['rank'] - 1
         checkRight = piece['rank'] + 1
         if piece['color'] == 'light':
@@ -481,11 +481,6 @@ def move(gameID, piece, position):
     validMoves = checkPieceMoves(boardState, piece['id'])
 
     if position in validMoves['validMoves']:
-
-        # update the 'move' db with the pieces new position
-        newMove = Move(gameID = Game.objects.get(id=gameID), moveNumber = boardState['turnNumber'], pieceID = piece['id'], rankFile = coordToRankFile(position))
-        newMove.save()
-
         return True
     else:
         return False

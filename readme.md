@@ -250,7 +250,170 @@ and a query is made to the `Game` database model to find a game that matches the
 Finally, the `spectateGame.html` page is rendered, passing in the games ID, where the pages JavaScript will then take over to display the game.
 
 
+The final 6 routes are API routes that are used for the JavaScript frontend to communicate with the ChessEngine backend.
+
+`getGameState` takes a game ID as a `GET` parameter, and calls `ChessEngine.generateBoardState()`.
+The resulting dictionary object is then returned as a JSON object. 
+
+
+`getMoveList` takes a game ID as a `POST` parameter and makes a query to the `Move` database model. A QuerySet is created containing every `Move` object  
+that's associated with the given game ID. Some information is extracted from this QuerySet and returned as a JSON object to the front end.
+
+
+`checkMoves` takes a `gameState` and a piece ID as a `POST` parameter and calls `ChessEngine.checkPieceMoves()`. The resulting list is then  
+returned as a JSON object.
+
+
+`submitMove` takes a game ID, a piece object, and a desired position as `POST` parameters. These are then passed to `ChessEngine.move()`. If `True` is returned;  
+then the move is valid and a new `Move` database entry is created and saved. 
+
+
+`checkForWinCondition` takes a game ID and a player color, and checks a few different cases to see if an end game condition has been reached.  
+First, `ChessEngine.checkForInsufficientMaterial()` is called. This checks if there are too few pieces remaining on the board for a win condition to be reached.  
+If the chess engine returns `True`, then the `Game` database entry is updated with `isActive = False`, and this function returns `"message":"draw"` to the front end, resulting in a draw.  
+"Insufficient material" is defined by Chess.com as `King vs King`; `King & Bishop vs King`; `King & Knight vs King`; and `King & Bishop vs King & Bishop`, where  
+both bishops occupy the same colored square.
+
+If a draw by insufficient material has not occurred, the next step is to count the legal moves available to the current player.  
+If this number is 0, the game ends in either a checkmate or a stalemate. A call is made to `ChessEngine.isInCheck()` to determine which.
+If this number is -1, it indicates the player has moves remaining, but only the King can move. In this case; the opposing players moves are also counted.  
+If the opposing player also returns -1 moves, the game ends in a stalemate. This can happen when there are still Pawns on the board which may be stuck in gridlock.  
+In this case, `ChessEngine.checkForInsufficientMaterial()` will return False, even though the game is essentially down to King vs King, which is still defined as a draw.
+
+If these checks all pass, this function returns `"message":"no win"` to the front end, and the game resumes.
+
+
+`generateRoomCode` is the final function here. This is just a supporting function that creates a new room code when needed.  
+A random string of 6 uppercase letters and numbers are created.  
+Then a query is made to the `Game` database model. If a game is found with the new room code; then the function loops back and generates a new code.
+If no game is found with the newly created code, then the code is considered "good" and will be returned.
+
+
 ### ChessEngine.py
+
+This file contains 12 functions which make up the backend portion of the game itself. 
+I'll only provide a brief description of the purpose of each function since the rules to Chess and the game itself are a  
+little outside the scope of this projects requirements. I will comment that this ended up being a huge undertaking, and in retrospect I would have chosen a different  
+game had I realized how complicated the rules to chess can be.
+
+Before diving into the file function-by-function, I'll lay out the structure of a `boardState`. This is a JSON object that is core to all of the games logic, and used  
+to draw the game board at any different point during a game. As such it gets passed between the front and back end often.
+
+A `boardState` looks like this: 
+
+```
+"id": 434, 
+"roomCode": "8A2XNA", 
+"player1": "cg", 
+"player2": "chris", 
+"turnNumber": 0, 
+"pieces": 
+    [{"id": 0, 
+    "color": "dark", 
+    "type": "rook", 
+    "rank": 0, 
+    "file": 0, 
+    "captured": false, 
+    "hasMoved": false}, 
+    
+    {"id": 1, 
+    "color": "dark", 
+    "type": "knight", 
+    "rank": 1, 
+    "file": 0, 
+    "captured": false, 
+    "hasMoved": false}, 
+    .  
+    .  
+    .  
+    {"id": 31, 
+    "color": "light", 
+    "type": "rook", 
+    "rank": 7, 
+    "file": 7, 
+    "captured": false, 
+    "hasMoved": false}]
+```
+
+It begins with a few details about the game: its ID and room code, the usernames of player1 and player2, the number of turns that have taken place,  
+and a large block called "pieces". The "pieces" block is split into 32 sections; one for each piece in the game, and contains a few pieces of identifying  
+information: and id number, a color (either 'light' or 'dark'), a type ('pawn', 'rook', 'queen', etc), a rank and file, and two boolean values "captured" and "hasMoved".  
+The rank and file store the pieces current position. Rank is the horizontal coordinate, and File is the vertical coordinate. These are integers from 0-7, with (0,0) being  
+the top left corner of the board. 
+
+Since writing this code I've discovered much more concise ways to convey this information. There is a standarized system called *FEN Notation* which accomplishes the same purpose in  
+one line of text. If I were to write this project again from the ground up, that's the approach I would use. With that being said, I came up with the current system myself without any  
+outside help, and switching to FEN Notation would have required significant code rewriting, so I elected to stick with it through the end of the project.
+
+
+Looking closer at the individual functions that make up my Chess Engine:
+
+`CreateNewBoard` simply takes a `Game` object from the database and generates a new board state as seen above. Each piece has its `captured` and `hasMoved` flags set to False,  
+and their positions are set according to Chess rules for starting a new game.
+
+
+`CheckPieceMoves` is by far the largest function in this file. It takes a `boardState` and a `pieceID`. The purpose of this function is to return a list of every legal move  
+that the given piece can make. The function starts by generating a list of occupied spaces on the board to compare any possible move against, called `boardPieces`.  
+Then a few blocks contain special cases for Pawns which have unique movement patterns compared to the other pieces. If the given piece in question is a Pawn, the first block  
+checks if the Pawn can move diagonally to capture an enemy piece. The second block checks if the Pawn can perform a move known as *En Passant*. These unique moves are further  
+complicated by the fact that a player cannot make a move that would place their own King in check. At the end of each block a "virtual game state" is created; which is simply  
+a `boardState` that shows what the game would look like on the next turn if the move were allowed to happen. If the players own King is in check in this `virtualGameState`, then  
+the move is not legal and is discarded as an option. 
+
+If the given piece is a Rook, then the following block will examine whether a move called *Castling* is allowed. The king is not allowed to move through Check at any point  
+during this movement, so several `virtualGameStates` need to be created to examine the outcome at each step of the move before declaring it legal.  
+
+Finally, the last block checks for any standard move the given piece is allowed to make. A call is made to `getMovementPattern()` and `getMovementDistance()` to determine  
+which directions and how many spaces a piece is allowed to move. Then each possible move is compared against the `boardPieces` list. A piece may not move into a space occupied  
+by a same-colored piece; and it may move into but not *through* a space occupied by an opposite colored piece. A `virtualGameState` is created for the result of each possible move,  
+and if the move would put the players own King in check, the move is discarded.
+
+Each time a possible move is checked and declared "legal"; it's coordinateds are added into a list called `validMoves` as a tuple (x,y). Once every possible move has been  
+examined for the given piece, `validMoves` is then returned.
+
+
+`CountValidMoves` makes a call to `checkPieceMoves` for each piece that a given player has remaining on the board. The total number of legal moves for a player is then counted,  
+and that count is used to determine if the game has reached a win or draw condition. In the special case that a player has legal moves, but ONLY the King is allowed to move,  
+a -1 is returned. This is useful for detecting stalemate conditions where both players can only move their Kings while the other pieces on the board are in some type of gridlock.
+
+
+`CheckForInsufficientMaterial` looks at the number and types of pieces that both players have remaining on the board. If there is "insufficient material" on the board  
+to reach a win condition, the game is declared a draw.
+
+
+`isInCheck` takes a board state and a player color, and returns True if that player is currently in check, or False if not.
+This function starts at the position of the players King, and begins checking one space at a time in a given direction until either the edge of the board or another piece is  
+found. If a piece is found, the game checks if that piece is an opponents piece, and if they are able to attack the players King on the next turn. If so, the function returns  
+True, otherwise the function returns to the location of the King and begins stepping away again in the next direction. The final block checks 8 specific spaces around the King  
+for the presence of an enemy Knight. If all of these tests complete without finding a check, the function returns False.
+
+
+`move` takes a game ID, piece, and position, and returns True or False if the move is legal. It makes a call to `checkPieceMoves()`, and checks that the provided position  
+is contained somewhere in the returned list. If so, the function returns True, and the move is added to the `Move` database.
+
+
+`GenerateBoardState` is the function responsible for re-creating the state of the board when an in-progress game is resumed.  
+It begins by calling `createNewBoard()`, and then makes a call to the `Move` database model to get a list of every move made associated with the game in question.  
+Then for each move entry, it will update the board state to reflect the pieces new positions, and return the final `boardState` object.
+
+
+`SimulateMove` is used by `CheckPieceMoves` for determining whether a move will place a players King in check. It begins by creating a deep copy of the current `boardState` object  
+(called `virtualBoardState`) so that data can be manipulated without changing the main game. Then, using similar logic to `GenerateBoardState`, the move that  
+needs to be simulated is performed on the `virtualBoardState`. This state is then returned to the calling method where it can be analyzed as needed.
+
+
+`CoordToRankFile` takes a position tuple (x,y) and converts it to the conventional rank-file system humans are used to reading, where "A1" is the bottom left  
+square and "H8" is the top right square.
+
+`RankFileToCoord` does the opposite, where it takes a 2 character string and converts it to an integer tuple in the form (x,y) to make it easier to do math.
+
+
+`GetMovementPattern` takes a piece object and returns a list of tuples that describe which directions a piece is ordinarily allowed to move, with no respect to the  
+distance that the piece can normally move.
+
+`GetMovementDistance` takes a piece object and returns an integer distance that a piece is ordinarily allowed to move, with no respect to the direction that the piece  
+can normally move.
+
 
 
 ### JavaScript

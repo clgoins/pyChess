@@ -503,16 +503,90 @@ loading the correct image based on the pieces `type` and `color` properties, the
 `#pX_Y`, where x = `rank` and y = `file`, and appending the `<img>` element as a child. A click event listener is  
 also added to each piece, using `clickPiece()` as the callback.
 
-`clickCell()`
 
-`clickPiece()`
+`clickPiece()` is one of the two main click event listener callback functions, and is the primary method through which  
+a player provides input.
+
+The function starts with three checks; one to make sure it is the clicking players turn, and another  
+to make sure the `checkingMove` flag is false. The final check is to make sure the player is clicking on a piece that they own.  
+These checks are to prevent a player from moving out of turn; and also to prevent a player from attempting to move an opponents  
+piece. When a piece is clicked, the player is now "checking" their possible moves, which is kept track of by the `checkingMove` flag.  
+When the `checkingMove` flag is set, the game then expects the player to click an empty cell to move the piece to. Nothing should happen  
+if two same-colored pieces are clicked one after the other.
+
+When a player clicks a piece, and these three checks pass; `checkingMove` is then set to `true`. The clicked piece is assigned to the
+`activePiece` variable, and the cell that the piece resides in is selected and highlighted in white. A call is then made to `checkMoves()`  
+where the possible legal moves will be highlighted on the board.
+
+
+`clickCell()` is the second main click event listener. Ordinarily clicking an empty cell will yield no results. But a check is made  
+against two variables; `checkingMove`, and `activePiece`. If `checkingMove` is `true` and `activePiece` is not null, that  
+indicates the player has selected a piece to move, and is now looking for a new position to move to. In that case; a call is  
+made to the `submitMove` API route, passing in the X and Y coordinate of the empty cell as `POST` parameters. The backend will  
+validate that the move is legal, and respond with "success" or "failure". In the event of a "success", the move is logged to the database  
+by the backend, the turn is considered complete, and `checkWinCondition()` is called to look for a potential checkmate or stalemate in  
+this new position. `setInterval()` is then called, passing in `checkForUpdates`, which will begin the process of polling the database every  
+15 seconds to detect a move from the opponent.
+
+Regardless if the move was successful or not, the board and pieces are rendered again. This allows a player to cancel a move once  
+in the `checkingMove` state by clicking the selected piece again, or clicking any invalid position on the board.
+
 
 `checkMoves()`
+This function is a supplement to `clickPiece()`, and is where the actual API call to check legal moves takes place.  
+A fetch request is made to the `checkMoves` API route, passing in the `gameState` and `pieceID` as `POST` parameters.  
+The expected response is an array of tuples, in the format (X,Y) where each tuple represents a cell where the piece  
+can legally move. The function then iterates through this list, and for each tuple, the represented cell is selected  
+and changed to a shade of green to "highlight" it.
 
-`checkWinCondition()`
+
+`checkWinCondition()` runs at the end of every turn, and checks the new board position for a checkmate or draw condition.  
+The function begins by determining whose turn it is, and makes a call to the `checkWinCondition` API route where the server  
+side portion of the game does the heavy lifting. The backend will respond with "checkmate", "stalemate", "draw", or "no win".  
+If the response is "no win", nothing happens and this function will exit. In any other case, the status message in the top  
+of the info panel is changed to display the outcome to the user. `killClickHandlers.abort()` is then called to disable  
+all of the event listeners on the cells and pieces, to prevent further moves from being made. `endGameAnimation()` is called  
+to start the end-of-game routine, and finally `clearInterval()` is called to stop the game from polling for updates.
+
 
 `endGameAnimation()`
+This function is purely aesthetic and runs at the end of the game. I found while testing that sometimes I wouldn't notice  
+immediately that the game had ended, so I decided to create this little animation to make it much more obvious. All it does  
+is iterate through each cell on the board and color it green, red, or cyan, based on whether the player wins, loses, or draws  
+respectively.
 
-`sleep()`
+
+`sleep()` works in tandem with `endGameAnimation()`. I didn't want all the cells to change color at the same time, so  
+by waiting for this timeout function to return, I was able to force the program to sit idle for a short period of time,  
+blocking further code execution. This has the effect of creating a 50ms pause between each cell changing color. 
+
 
 `setBoardAspectRatio()`
+The final function in this script works in tandem with the pages CSS. The layout of the whole page changes based on the windows  
+aspect ratio. But due to the shape and size of the game in the middle of the window, it's possible for the game to be sized taller  
+than it is long, while the browser window is still technically in landscape orientation. This resulting in some strange stretching  
+where the board spaces would spread apart from each other which I didn't like. This little block just checks the dimensions of the  
+`boardContainer` div, and if it's taller than it is long, it swaps some CSS around to begin basing the size of the board on its width  
+instead of its height. This works vice versa when the board container becomes wider than it is tall again.
+
+
+#### Game mode differences
+
+All 4 game modes are based on the same code that makes up the Network Game mode. In this section I'll quickly run over the points  
+where the code may differ from a typical network game.  
+
+- Local Game behaves almost exactly the same as Network Game; with the exception that `checkForUpdates()` is not present.  
+    Instead of blocking moves and waiting for a change in the database; the game expects that both light and dark moves will be  
+    made one after another from the same device.
+
+- Spectate Game behaves like a normal game, with the exception of the absence of click event listeners. `checkForUpdates()` runs  
+    periodically, and draws the new board position on the screen, allowing a user to spectate the game without actually participating.
+
+- Review Game is the most different of the four. One fetch is made to the `moveList` API route when the page loads, which gets the full  
+    list of moves made for the game in question. `simulateGame()` is a 1-to-1 port of `generateBoardState()` in the Python back-end code.  
+    This is handled by the backend during a normal game to validate moves and prevent cheating, but handled by the front end during  
+    review to reduce potential load on the server. Finally, a function called `autoStep()` is introduced, which runs on an interval.  
+    Each step, the move counter will be incremented, and the board position at that move will be rendered and displayed.  
+    Four buttons can be seen at the bottom of the info panel. The **play** and **stop** buttons will stop and start the  
+    timer that calls `autoStep()`. The **forward** and **backward** arrows will increment or decrement the move counter and  
+    re-render the board manually.

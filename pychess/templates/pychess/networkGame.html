@@ -376,14 +376,14 @@ Play Chess!
                 {
                     //Check for a checkmate or stalemate, and update the status message accordingly.
                     checkWinCondition();
+                    updateTimer = setInterval(checkForUpdates, 15000);
                 }
 
                 drawBoard();
                 drawPieces();
                 updateMoveList(state);
                 updateStatus();
-                updateTimer = setInterval(checkForUpdates, 15000);
-
+                
                 });
             });
         }

@@ -418,3 +418,101 @@ can normally move.
 
 ### JavaScript
 
+The JavaScript used on the site is split into four main scripts, seen on `localGame.html`, `networkGame.html`, `spectateGame.html`, and `reviewGame.html`.  
+For the most part, the scripts are functionally the same with a few small differences depending on the game mode. For the sake of brevity, I'll be detailing  
+the network game code, since that's the script that the other 3 are based on, and then I'll spend some time at the end of this section to highlight the main differences  
+between the four.
+
+The JavaScript portion of the code makes up the front end portion of the chess engine. This part is responsible for taking user input and drawing the board and pieces on the screen.  
+Communication with the backend is done through the use of `fetch` requests made to the API routes detailed in the **Djago** section of this readme.  
+
+
+The first portion of the code runs as soon as the page is finished loading. 
+It starts by adding an event listener for when the user resizes the browser window, calling `setBoardAspectRatio`.  
+Handling the board sizing through JS is preferrable because I ended up with some weird artifacts trying to do it through raw CSS.  
+Certain cases where the page was right on the edge of switch to the vertical layout would cause the spaces to deform and spread out which was undesirable.
+
+The script then defines an empty dictionary to hold the board state later on, and grabs the game ID, the users username, and the pages CSRF token off the page.  
+Three other variables are declared to be used with game logic later on; `checkingMove`, `activePiece`, and `updateTimer`.
+The final variable `killClickHandlers` is set up; which is used at the end of the game to deactivate all of the click event handlers on the page to prevent further input.  
+
+`drawBoard()` and `getGameState()` are called and some of the info panels on the board are filled in with the players color and opponent name, etc.
+
+Finally the game checks if a second player has joined, and calls `startGame()` if so. If not, `checkForUpdates()` is called every 15 seconds until a second player is found.  
+
+
+`checkForUpdates()`
+This function is the core of what makes online multiplayer work. The idea is that the frontend has it's own copy of the current game state in memory. A fetch request is  
+sent to the `gameState` API route; where the backend will generate a new game state based on the information recorded in the database. If this newly returned game state  
+is different from the currently stored game state; it indicates that the opposing player has made their move, and the game can now progress. This function is intended  
+to be run via `setInterval()`; so if no change is detected, the function can exit, doing nothing, and will run another check on the next interval.  
+
+The first thing the function checks is the name of player2. If the currently stored state has no name for player2, that indicates the game has just been created.  
+If the newly returned state, however, does show a name for player2, than it can be deduced that a second player has just joined the game. The currently stored game state  
+will be updated with the newly returned state, and `startGame()` is called, which is the entry point for the games main loop.  
+
+If this function runs, and a name is already saved for player2 in the current game state; this indicates the game is already in progress. In this case, the function  
+is instead checking for the opposing player to take their turn, where it can then pass control back to the logged in player. The board and the pieces are drawn to  
+the screen, the status message and the move list are updated in the information panel; and `clearInterval()` is called to stop this function from running again until  
+another `setInterval()` is invoked at the end of the players turn.  
+
+
+`startGame()`
+This function is the entry point for the games main loop. Once the page is loaded and `checkForUpdates()` determines that a second player is present, this will be the  
+first function called. It starts by determining whose turn it is. For simplicity, the player who creates the game is always player1, and always plays as light colored  
+pieces. Light pieces always move first, per Chess rules. Therefore, by checking whether the current turn number in the current game state is odd or even, it can  
+be determined whose turn it is to move. Player1 will move on even numbered turns, and player2 on odd numbered turns. 
+
+If it is currently the logged in users turn, `clearInterval()` is called, which will ensure the database is not being polled for updates. Otherwise, `setInterval()`  
+is called to run `checkForUpdates()` every 15 seconds. The information panel is then updated with the opponents username, the board and pieces are drawn, the status  
+and move list panels are populated, and the game checks for a win condition. `checkForWinCondition()` is run once when the game is first loaded, and then again at the end  
+of every turn.
+
+
+`getGameState()` is a simple asynchronous function that makes a fetch request to the `gameState` API route, and returns the newly generated state.  
+
+
+`updateMoveList()` makes a fetch request to the `moveList` API route. A `<div>` element is made for each item in the returned move list, which contains text details  
+about which turn the move took place on, which piece moved, and which space the piece moved to. These `<div>` elements are then added to the on-screen element with the  
+id "moveList". This div is the bottom-most panel in the information box (either to the right of or below the chess board, depending on screen orientation). This results in the player seeing a list of every move made  
+in the game thus far.
+
+
+`updateStatus()` is a simple check to see whose turn it is, and then displays that users name in the  
+top-most box of the information panel.
+
+
+`drawBoard()` bears the responsibility of drawing the chess board itself, and attaching click event handlers to each  individual space. The board itself is a `<div>` element with its display set to `grid`. 
+A for loop iterates 8 times, creating 8 child divs with the class "boardRow", and a nested for loop iterates 8 more times  
+for each row, populating the row with 8 child div elements, with the class name alternating between `lightCell` and  
+`darkCell`. This results in the full 8x8 checkerboard pattern on screen.  
+Each cell element is given an ID in the format "pX_Y", where X and Y are the cells coordinates, from 0-7. The "p" at the  
+start stands for "position" and is only there because HTML apparently does not allow an elements ID to start with a number.  
+Finally each cell is given a click event listner which will call `clickCell()` before it is appened to the parent row.  
+
+This function contains two large for loops, each one wrapped in an `if` statement, checking whether the user is playing  
+as player1 or player2. This is unique to the Network Game mode, and is intended to draw the board such that the cell IDs  
+are labelled in reverse if the player is playing as dark pieces. The point of this is for both players to be able to see  
+their own pieces starting at the bottom of the board, which in my opinion feels more natural from a gameplay perspective.  
+
+
+`drawPieces()` creates an array of Piece objects based on information in the current game state, and then draws each piece  
+in the appropriate cell. The cell IDs given to each space in the previous section directly correlate with the `rank` and  
+`file` properties of the pieces in the game state. Therefore this is a simple matter of creating an `<img>` tag, and  
+loading the correct image based on the pieces `type` and `color` properties, then selecting the cell div with the ID  
+`#pX_Y`, where x = `rank` and y = `file`, and appending the `<img>` element as a child. A click event listener is  
+also added to each piece, using `clickPiece()` as the callback.
+
+`clickCell()`
+
+`clickPiece()`
+
+`checkMoves()`
+
+`checkWinCondition()`
+
+`endGameAnimation()`
+
+`sleep()`
+
+`setBoardAspectRatio()`

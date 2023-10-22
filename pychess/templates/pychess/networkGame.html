@@ -122,23 +122,23 @@ Play Chess!
     function checkForUpdates()
     {
         let statePromise = getGameState();
-        statePromise.then((state) => {
+        statePromise.then((newState) => {
         
             // At the start of the game, this should check if a second player has joined; and start the game if so.
-            if(gameState['player2'] === "" && state['player2'] != "")
+            if(gameState['player2'] === "" && newState['player2'] != "")
             {
-                gameState = state;
+                gameState = newState;
                 startGame();
             }
 
-            //If a change was detected, update the gameState, draw the new board, and stop polling for updates.
-            else if(gameState['player2'] != "" && JSON.stringify(gameState) != JSON.stringify(state))
+            //Mid-game, if a change was detected, update the gameState, draw the new board, and stop polling for updates.
+            else if(gameState['player2'] != "" && JSON.stringify(gameState) != JSON.stringify(newState))
             {
-                gameState = state;
+                gameState = newState;
                 drawBoard();
                 drawPieces();
                 updateStatus();
-                updateMoveList(state);
+                updateMoveList(gameState);
                 clearInterval(updateTimer);
             }
             
@@ -159,28 +159,21 @@ Play Chess!
             updateTimer = setInterval(checkForUpdates, 15000);
         }
 
+
         document.querySelector("#status").innerHTML = "Found player"
 
-        //Generate the current game state, then draw the board and the pieces on it.
-        let statePromise = getGameState();
-        statePromise.then((state) => {
-        gameState = state;
-
-        //By this point there is definitely a second player; so update the info to display the username of your opponent
+        //Update the info to display the username of your opponent
         if ("{{ request.user }}" == gameState['player1'])
             document.querySelector("#opponent").innerHTML = gameState['player2'];
         else if ("{{ request.user}}" == gameState['player2'])
             document.querySelector("#opponent").innerHTML = gameState['player1'];
         
-
-
         drawBoard();
         drawPieces();
-        updateMoveList(state);
+        updateMoveList(gameState);
         updateStatus();
         checkWinCondition();
 
-        });
     }
 
 

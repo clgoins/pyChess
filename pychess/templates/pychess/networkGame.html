@@ -111,7 +111,7 @@ Play Chess!
 
         //Checks if a second player has joined yet. Begin polling for updates if not; or start the game if so.
         if (gameState['player2'] === "")
-            updateTimer = setInterval(checkForUpdates, 15000);
+            updateTimer = setInterval(checkForUpdates, 2000);
         else
             startGame();
         });
@@ -156,7 +156,7 @@ Play Chess!
             clearInterval(updateTimer);
         else
         {
-            updateTimer = setInterval(checkForUpdates, 15000);
+            updateTimer = setInterval(checkForUpdates, 2000);
         }
 
 
@@ -376,7 +376,7 @@ Play Chess!
                 {
                     //Check for a checkmate or stalemate, and update the status message accordingly.
                     checkWinCondition();
-                    updateTimer = setInterval(checkForUpdates, 15000);
+                    updateTimer = setInterval(checkForUpdates, 2000);
                 }
 
                 drawBoard();
@@ -527,7 +527,7 @@ Play Chess!
     async function endGameAnimation(outcome)
     {
         
-        let tableCells = document.querySelectorAll("td");
+        let tableCells = document.querySelectorAll(".lightCell");
         let boardColor;
 
         if (outcome == "win")
@@ -552,6 +552,7 @@ Play Chess!
 
         for (let i = 0; i < tableCells.length; i++)
         {
+            console.log("test");
             tableCells[i].style.backgroundColor = boardColor;
             await sleep(50);
         }
